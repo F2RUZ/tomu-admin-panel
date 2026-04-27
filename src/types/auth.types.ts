@@ -9,17 +9,17 @@ export interface LoginTokens {
   refresh_token: string;
 }
 
+// Backend response ga to'liq mos
 export interface LoginUser {
-  id: string;
+  id: number;
   firstName: string;
   lastName: string;
   phoneNumber: string;
-  email?: string;
-  avatar?: string;
-  role: "DIRECTOR" | "ADMIN" | "TEACHER" | "STUDENT";
-  isActive: boolean;
+  email?: string | null;
+  avatar?: string | null;
+  role: "director" | "admin" | "teacher" | "student";
   createdAt: string;
-  updatedAt: string;
+  lastUpdatedAt: string; // ← backend shu nomda qaytaradi
 }
 
 export interface LoginResponseData {
@@ -40,7 +40,7 @@ export interface RefreshApiResponse {
   data: LoginResponseData;
 }
 
-// ─── Access (current user) ────────────────────────────────────────────────────
+// ─── Access ──────────────────────────────────────────────────────────────────
 export interface AccessRequest {
   accessToken: string;
 }
@@ -51,7 +51,7 @@ export interface AccessApiResponse {
   data: LoginUser;
 }
 
-// ─── Form state ───────────────────────────────────────────────────────────────
+// ─── Form ────────────────────────────────────────────────────────────────────
 export interface LoginFormValues {
   phoneNumber: string;
   password: string;

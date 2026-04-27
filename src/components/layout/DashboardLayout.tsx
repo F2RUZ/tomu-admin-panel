@@ -1,10 +1,10 @@
+// src/components/layout/DashboardLayout.tsx
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { Box } from "@mui/joy";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-import { pageEnter } from "@/lib/gsap";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -12,25 +12,21 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const mainRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    pageEnter(mainRef.current);
-  }, []);
 
   return (
     <Box
       sx={{
         display: "flex",
         minHeight: "100vh",
+        flexDirection: "row", // ← Sidebar chap, content o'ng
         "[data-joy-color-scheme='light'] &": { bgcolor: "#f1f5f9" },
         "[data-joy-color-scheme='dark'] &": { bgcolor: "#0e0e12" },
       }}
     >
-      {/* Sidebar */}
+      {/* ── Sidebar — chap tomon ── */}
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
 
-      {/* Right side */}
+      {/* ── O'ng tomon: Header + Content ── */}
       <Box
         sx={{
           flex: 1,
@@ -40,14 +36,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           overflow: "hidden",
         }}
       >
-        {/* Header */}
         <Header />
 
-        {/* Main content */}
         <Box
-          ref={mainRef}
           component="main"
-          className="page-wrapper"
           sx={{
             flex: 1,
             p: { xs: 2, md: 3 },

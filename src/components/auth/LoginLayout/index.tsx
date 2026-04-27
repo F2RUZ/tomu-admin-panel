@@ -5,122 +5,54 @@ import { Box, Typography } from "@mui/joy";
 import { gsap } from "@/lib/gsap";
 import LoginCard from "@/components/auth/LoginCard";
 
-// ─── Floating orb ─────────────────────────────────────────────────────────────
-function Orb({
-  size,
-  top,
-  left,
-  delay,
-  color,
-}: {
-  size: number;
-  top: string;
-  left: string;
-  delay: number;
-  color: string;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    gsap.to(ref.current, {
-      y: -20,
-      duration: 3 + delay,
-      ease: "sine.inOut",
-      yoyo: true,
-      repeat: -1,
-      delay,
-    });
-  }, [delay]);
-
-  return (
-    <Box
-      ref={ref}
-      sx={{
-        position: "absolute",
-        top,
-        left,
-        width: size,
-        height: size,
-        borderRadius: "50%",
-        background: color,
-        filter: `blur(${size * 0.4}px)`,
-        opacity: 0.5,
-        pointerEvents: "none",
-      }}
-    />
-  );
-}
-
-// ─── Stats card ───────────────────────────────────────────────────────────────
-function StatPill({
-  value,
-  label,
-  delay,
-}: {
-  value: string;
-  label: string;
-  delay: number;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    gsap.fromTo(
-      ref.current,
-      { x: -20, opacity: 0 },
-      { x: 0, opacity: 1, duration: 0.5, ease: "power2.out", delay }
-    );
-  }, [delay]);
-
-  return (
-    <Box
-      ref={ref}
-      sx={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 1.5,
-        px: 2,
-        py: 1.25,
-        borderRadius: "12px",
-        border: "1px solid rgba(255,255,255,0.15)",
-        backdropFilter: "blur(12px)",
-        bgcolor: "rgba(255,255,255,0.08)",
-      }}
-    >
-      <Typography
-        sx={{
-          fontFamily: "var(--font-montserrat)",
-          fontWeight: 800,
-          fontSize: "1.125rem",
-          color: "#fff",
-          letterSpacing: "-0.02em",
-        }}
-      >
-        {value}
-      </Typography>
-      <Typography
-        sx={{
-          fontFamily: "var(--font-montserrat)",
-          fontWeight: 500,
-          fontSize: "0.8125rem",
-          color: "rgba(255,255,255,0.65)",
-        }}
-      >
-        {label}
-      </Typography>
-    </Box>
-  );
-}
-
 export default function LoginLayout() {
   const leftRef = useRef<HTMLDivElement>(null);
+  const orb1Ref = useRef<HTMLDivElement>(null);
+  const orb2Ref = useRef<HTMLDivElement>(null);
+  const stat1Ref = useRef<HTMLDivElement>(null);
+  const stat2Ref = useRef<HTMLDivElement>(null);
+  const stat3Ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Left panel entrance
     gsap.fromTo(
       leftRef.current,
       { x: -30, opacity: 0 },
-      { x: 0, opacity: 1, duration: 0.6, ease: "power3.out", delay: 0.1 }
+      { x: 0, opacity: 1, duration: 0.6, ease: "power3.out", delay: 0.1 },
     );
-  }, []);
+
+    // Orb float animations
+    gsap.to(orb1Ref.current, {
+      y: -20,
+      duration: 3,
+      ease: "sine.inOut",
+      yoyo: true,
+      repeat: -1,
+    });
+    gsap.to(orb2Ref.current, {
+      y: -15,
+      duration: 4,
+      ease: "sine.inOut",
+      yoyo: true,
+      repeat: -1,
+      delay: 1,
+    });
+
+    // Stats entrance
+    const stats = [stat1Ref.current, stat2Ref.current, stat3Ref.current];
+    gsap.fromTo(
+      stats,
+      { x: -20, opacity: 0 },
+      {
+        x: 0,
+        opacity: 1,
+        duration: 0.5,
+        ease: "power2.out",
+        stagger: 0.15,
+        delay: 0.5,
+      },
+    );
+  }, []); // ← bo'sh array — faqat bir marta
 
   return (
     <Box
@@ -131,7 +63,7 @@ export default function LoginLayout() {
         overflow: "hidden",
       }}
     >
-      {/* ─── Left panel (branding) — faqat desktop ─── */}
+      {/* ─── Left panel — faqat desktop ─────────────────────────── */}
       <Box
         ref={leftRef}
         sx={{
@@ -143,7 +75,6 @@ export default function LoginLayout() {
           py: 6,
           position: "relative",
           overflow: "hidden",
-
           "[data-joy-color-scheme='light'] &": {
             background:
               "linear-gradient(145deg, #0c4a6e 0%, #0284c7 50%, #38bdf8 100%)",
@@ -154,17 +85,43 @@ export default function LoginLayout() {
           },
         }}
       >
-        {/* Floating orbs */}
-        <Orb size={300} top="-10%" left="-10%" delay={0} color="rgba(255,255,255,0.06)" />
-        <Orb size={200} top="60%" left="60%" delay={1} color="rgba(255,255,255,0.05)" />
-        <Orb size={150} top="30%" left="70%" delay={0.5} color="rgba(255,255,255,0.04)" />
+        {/* Orbs */}
+        <Box
+          ref={orb1Ref}
+          sx={{
+            position: "absolute",
+            top: "-10%",
+            left: "-10%",
+            width: 300,
+            height: 300,
+            borderRadius: "50%",
+            background: "rgba(255,255,255,0.06)",
+            filter: "blur(60px)",
+            pointerEvents: "none",
+          }}
+        />
+        <Box
+          ref={orb2Ref}
+          sx={{
+            position: "absolute",
+            top: "60%",
+            left: "60%",
+            width: 200,
+            height: 200,
+            borderRadius: "50%",
+            background: "rgba(255,255,255,0.05)",
+            filter: "blur(50px)",
+            pointerEvents: "none",
+          }}
+        />
 
         {/* Grid pattern */}
         <Box
           sx={{
             position: "absolute",
             inset: 0,
-            backgroundImage: `radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)`,
+            backgroundImage:
+              "radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)",
             backgroundSize: "32px 32px",
             pointerEvents: "none",
           }}
@@ -172,7 +129,7 @@ export default function LoginLayout() {
 
         {/* Content */}
         <Box sx={{ position: "relative", zIndex: 1, maxWidth: 460 }}>
-          {/* Logo */}
+          {/* Logo pill */}
           <Box
             sx={{
               display: "inline-flex",
@@ -227,12 +184,9 @@ export default function LoginLayout() {
               mb: 2,
             }}
           >
-            Online talim
+            Online ta'lim
             <br />
-            <Box
-              component="span"
-              sx={{ color: "rgba(255,255,255,0.7)" }}
-            >
+            <Box component="span" sx={{ color: "rgba(255,255,255,0.65)" }}>
               boshqaruv tizimi
             </Box>
           </Typography>
@@ -247,21 +201,61 @@ export default function LoginLayout() {
               fontWeight: 400,
             }}
           >
-            Kurslar, guruhlar, oquvchilar va tolovlarni
+            Kurslar, guruhlar, o'quvchilar va to'lovlarni
             <br />
             bir joyda boshqaring.
           </Typography>
 
           {/* Stats */}
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
-            <StatPill value="10K+" label="O'quvchilar" delay={0.5} />
-            <StatPill value="50+" label="Kurslar" delay={0.65} />
-            <StatPill value="99%" label="Ishonchlilik" delay={0.8} />
+            {[
+              { ref: stat1Ref, value: "10K+", label: "O'quvchilar" },
+              { ref: stat2Ref, value: "50+", label: "Kurslar" },
+              { ref: stat3Ref, value: "99%", label: "Ishonchlilik" },
+            ].map((stat) => (
+              <Box
+                key={stat.label}
+                ref={stat.ref}
+                sx={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                  px: 2,
+                  py: 1.25,
+                  borderRadius: "12px",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  backdropFilter: "blur(12px)",
+                  bgcolor: "rgba(255,255,255,0.08)",
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontFamily: "var(--font-montserrat)",
+                    fontWeight: 800,
+                    fontSize: "1.125rem",
+                    color: "#fff",
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  {stat.value}
+                </Typography>
+                <Typography
+                  sx={{
+                    fontFamily: "var(--font-montserrat)",
+                    fontWeight: 500,
+                    fontSize: "0.8125rem",
+                    color: "rgba(255,255,255,0.65)",
+                  }}
+                >
+                  {stat.label}
+                </Typography>
+              </Box>
+            ))}
           </Box>
         </Box>
       </Box>
 
-      {/* ─── Right panel (form) ─── */}
+      {/* ─── Right panel (form) ──────────────────────────────────── */}
       <Box
         sx={{
           width: { xs: "100%", lg: 520 },
@@ -275,7 +269,7 @@ export default function LoginLayout() {
           "[data-joy-color-scheme='dark'] &": { bgcolor: "#0e0e12" },
         }}
       >
-        {/* Background accent */}
+        {/* BG accent */}
         <Box
           sx={{
             position: "absolute",
@@ -295,8 +289,9 @@ export default function LoginLayout() {
             },
           }}
         />
-
-        <Box sx={{ width: "100%", maxWidth: 440, position: "relative", zIndex: 1 }}>
+        <Box
+          sx={{ width: "100%", maxWidth: 440, position: "relative", zIndex: 1 }}
+        >
           <LoginCard />
         </Box>
       </Box>

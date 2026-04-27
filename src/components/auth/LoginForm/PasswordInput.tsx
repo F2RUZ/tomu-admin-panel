@@ -33,8 +33,7 @@ export default function PasswordInput({
           fontWeight: 600,
           fontSize: "0.8125rem",
           mb: 0.75,
-          "[data-joy-color-scheme='light'] &": { color: "#374151" },
-          "[data-joy-color-scheme='dark'] &": { color: "#d4d4d8" },
+          color: "text.primary",
         }}
       >
         Parol
@@ -45,7 +44,7 @@ export default function PasswordInput({
         placeholder="••••••••"
         type={show ? "text" : "password"}
         disabled={disabled}
-        startDecorator={<RiLockLine size={18} style={{ opacity: 0.5 }} />}
+        startDecorator={<RiLockLine size={18} />}
         endDecorator={
           <IconButton
             variant="plain"
@@ -53,11 +52,7 @@ export default function PasswordInput({
             size="sm"
             onClick={() => setShow((v) => !v)}
             tabIndex={-1}
-            sx={{
-              borderRadius: "8px",
-              opacity: 0.5,
-              "&:hover": { opacity: 1 },
-            }}
+            sx={{ borderRadius: "8px" }}
           >
             {show ? <RiEyeOffLine size={18} /> : <RiEyeLine size={18} />}
           </IconButton>
@@ -68,26 +63,33 @@ export default function PasswordInput({
           fontSize: "0.9375rem",
           borderRadius: "12px",
           height: 52,
-          transition: "all 0.2s ease",
+
+          // ── Light ──
           "[data-joy-color-scheme='light'] &": {
             bgcolor: "#f8fafc",
-            border: "1.5px solid",
+            color: "#0f172a",
             borderColor: error ? "#ef4444" : "#e2e8f0",
+            "& input": { color: "#0f172a" },
+            "& input::placeholder": { color: "#94a3b8" },
             "&:hover": { borderColor: "#0284c7" },
             "&:focus-within": {
               borderColor: "#0284c7",
-              boxShadow: "0 0 0 3px rgba(2,132,199,0.1)",
+              boxShadow: "0 0 0 3px rgba(2,132,199,0.12)",
               bgcolor: "#fff",
             },
           },
+
+          // ── Dark ──
           "[data-joy-color-scheme='dark'] &": {
             bgcolor: "#26262d",
-            border: "1.5px solid",
+            color: "#fafafa",
             borderColor: error ? "#ef4444" : "#3a3a44",
+            "& input": { color: "#fafafa" },
+            "& input::placeholder": { color: "#52525e" },
             "&:hover": { borderColor: "#9333ea" },
             "&:focus-within": {
               borderColor: "#9333ea",
-              boxShadow: "0 0 0 3px rgba(147,51,234,0.12)",
+              boxShadow: "0 0 0 3px rgba(147,51,234,0.15)",
               bgcolor: "#2a2a32",
             },
           },

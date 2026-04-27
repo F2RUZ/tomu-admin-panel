@@ -18,26 +18,21 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<LoginFormErrors>({});
 
-  // ─── Validation ────────────────────────────────────────────────────────────
   const validate = (values: LoginFormValues): LoginFormErrors => {
     const errs: LoginFormErrors = {};
-
     if (!values.phoneNumber.trim()) {
       errs.phoneNumber = "Telefon raqam kiritilishi shart";
     } else if (values.phoneNumber.replace(/\D/g, "").length < 12) {
       errs.phoneNumber = "To'liq telefon raqam kiriting";
     }
-
     if (!values.password.trim()) {
       errs.password = "Parol kiritilishi shart";
     } else if (values.password.length < 6) {
       errs.password = "Parol kamida 6 ta belgidan iborat bo'lishi kerak";
     }
-
     return errs;
   };
 
-  // ─── Login ─────────────────────────────────────────────────────────────────
   const login = async (values: LoginFormValues) => {
     const validationErrors = validate(values);
     if (Object.keys(validationErrors).length > 0) {
@@ -56,34 +51,36 @@ export const useAuth = () => {
 
       const { data: userData, tokens } = response.data;
 
-      // Admin yoki Director bo'lmasa kirish taqiqlanadi
-      if (userData.role !== "ADMIN" && userData.role !== "DIRECTOR") {
+      // Backend "admin" yoki "director" kichik harf qaytaradi
+      const role = userData.role?.toLowerCase();
+      if (role !== "admin" && role !== "director") {
         setErrors({
           general: "Bu panel faqat adminlar uchun. Kirish huquqingiz yo'q.",
         });
         showError("Kirish huquqingiz yo'q", "Ruxsat xatosi");
+        setLoading(false);
         return;
       }
 
-      // Cookie ga saqlash (middleware uchun)
+      // Cookie — middleware "accessToken" tekshiradi
       Cookies.set("accessToken", tokens.access_token, {
-        expires: 1,
+        expires: 30,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        sameSite: "lax",
       });
 
-      // Zustand store ga saqlash
+      // Zustand store
       const user: User = {
-        id: userData.id,
+        id: String(userData.id),
         firstName: userData.firstName,
         lastName: userData.lastName,
         phone: userData.phoneNumber,
-        email: userData.email,
-        avatar: userData.avatar,
-        role: userData.role.toLowerCase() as User["role"],
-        isActive: userData.isActive,
+        email: userData.email ?? undefined,
+        avatar: userData.avatar ?? undefined,
+        role: role as User["role"],
+        isActive: true,
         createdAt: userData.createdAt,
-        updatedAt: userData.updatedAt,
+        updatedAt: userData.lastUpdatedAt ?? userData.createdAt,
       };
 
       setAuth(user, {
@@ -97,9 +94,7 @@ export const useAuth = () => {
       const axiosErr = err as {
         response?: { data?: { message?: string }; status?: number };
       };
-
       const status = axiosErr?.response?.status;
-      const message = axiosErr?.response?.data?.message;
 
       if (status === 400) {
         setErrors({ general: "Telefon raqam yoki parol noto'g'ri" });
@@ -108,17 +103,14 @@ export const useAuth = () => {
         setErrors({ general: "Juda ko'p urinish. Biroz kuting" });
         showError("Juda ko'p urinish. Biroz kuting", "Limit xatosi");
       } else {
-        setErrors({
-          general: message || "Xatolik yuz berdi. Qayta urinib ko'ring",
-        });
-        showError(message || "Xatolik yuz berdi");
+        setErrors({ general: "Xatolik yuz berdi. Qayta urinib ko'ring" });
+        showError("Xatolik yuz berdi");
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // ─── Logout ────────────────────────────────────────────────────────────────
   const logout = () => {
     Cookies.remove("accessToken");
     useAuthStore.getState().logout();
