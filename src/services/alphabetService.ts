@@ -9,9 +9,11 @@ import {
 } from "@/types/alphabet.types";
 
 const AlphabetService = {
-  // GET /alphabet
-  getAll: async (): Promise<AlphabetListApiResponse> => {
-    const res = await api.get<AlphabetListApiResponse>("/alphabet");
+  // GET /alphabet/by-course/:courseId
+  getByCourse: async (courseId: number): Promise<AlphabetListApiResponse> => {
+    const res = await api.get<AlphabetListApiResponse>(
+      `/alphabet/by-course/${courseId}`,
+    );
     return res.data;
   },
 
@@ -21,15 +23,7 @@ const AlphabetService = {
     return res.data;
   },
 
-  // GET /alphabet/by-course/:courseId
-  getByCourse: async (courseId: number): Promise<AlphabetListApiResponse> => {
-    const res = await api.get<AlphabetListApiResponse>(
-      `/alphabet/by-course/${courseId}`,
-    );
-    return res.data;
-  },
-
-  // POST /alphabet — multipart/form-data (video upload)
+  // POST /alphabet — multipart/form-data
   create: async (dto: CreateAlphabetDto): Promise<AlphabetApiResponse> => {
     const formData = new FormData();
     formData.append("title", dto.title);
@@ -43,13 +37,13 @@ const AlphabetService = {
     return res.data;
   },
 
-  // PATCH /alphabet/:id — multipart/form-data
+  // PATCH /alphabet/:id
   update: async (
     id: number,
     dto: UpdateAlphabetDto,
   ): Promise<AlphabetApiResponse> => {
     const formData = new FormData();
-    if (dto.title) formData.append("title", dto.title);
+    if (dto.title !== undefined) formData.append("title", dto.title);
     if (dto.order !== undefined) formData.append("order", String(dto.order));
     if (dto.courseId !== undefined)
       formData.append("courseId", String(dto.courseId));

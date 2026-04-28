@@ -1,14 +1,13 @@
-// src/components/alphabet/AlphabetCard/index.tsx
+// src/components/courses/sections/Alphabet/AlphabetCard/index.tsx
 "use client";
 
 import { useRef, useEffect } from "react";
-import { Box, Typography, IconButton, Chip, Tooltip } from "@mui/joy";
+import { Box, Typography, IconButton, Tooltip } from "@mui/joy";
 import {
   RiEditLine,
   RiDeleteBinLine,
   RiPlayCircleLine,
   RiTimeLine,
-  RiHashtag,
 } from "react-icons/ri";
 import { Alphabet } from "@/types/alphabet.types";
 import { gsap } from "@/lib/gsap";
@@ -42,13 +41,13 @@ export default function AlphabetCard({
   useEffect(() => {
     gsap.fromTo(
       cardRef.current,
-      { opacity: 0, y: 20 },
+      { opacity: 0, y: 16 },
       {
         opacity: 1,
         y: 0,
-        duration: 0.4,
+        duration: 0.35,
         ease: "power2.out",
-        delay: index * 0.06,
+        delay: index * 0.05,
       },
     );
   }, [index]);
@@ -57,14 +56,14 @@ export default function AlphabetCard({
     <Box
       ref={cardRef}
       sx={{
-        borderRadius: "16px",
+        borderRadius: "8px",
         border: "1px solid",
         overflow: "hidden",
         transition: "all 0.2s ease",
         "&:hover": {
           transform: "translateY(-2px)",
           "[data-joy-color-scheme='light'] &": {
-            boxShadow: "0 8px 24px rgba(15,23,42,0.1)",
+            boxShadow: "0 8px 24px rgba(15,23,42,0.08)",
             borderColor: "#0284c7",
           },
           "[data-joy-color-scheme='dark'] &": {
@@ -92,9 +91,9 @@ export default function AlphabetCard({
           "[data-joy-color-scheme='dark'] &": { bgcolor: "#26262d" },
         }}
       >
-        {alphabet.videoUrl ? (
+        {alphabet.vimeoEmbedUrl ? (
           <iframe
-            src={alphabet.videoUrl}
+            src={alphabet.vimeoEmbedUrl}
             style={{
               width: "100%",
               height: "100%",
@@ -115,7 +114,7 @@ export default function AlphabetCard({
               color: "text.tertiary",
             }}
           >
-            <RiPlayCircleLine size={48} />
+            <RiPlayCircleLine size={40} />
           </Box>
         )}
 
@@ -127,7 +126,7 @@ export default function AlphabetCard({
             left: 8,
             width: 28,
             height: 28,
-            borderRadius: "8px",
+            borderRadius: "6px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -147,26 +146,26 @@ export default function AlphabetCard({
           {alphabet.order}
         </Box>
 
-        {/* Duration badge */}
+        {/* Duration */}
         <Box
           sx={{
             position: "absolute",
             bottom: 8,
             right: 8,
-            px: 1,
-            py: 0.25,
-            borderRadius: "6px",
             display: "flex",
             alignItems: "center",
             gap: 0.5,
-            bgcolor: "rgba(0,0,0,0.6)",
+            px: 1,
+            py: 0.25,
+            borderRadius: "6px",
+            bgcolor: "rgba(0,0,0,0.65)",
           }}
         >
-          <RiTimeLine size={12} color="#fff" />
+          <RiTimeLine size={11} color="#fff" />
           <Typography
             sx={{
-              fontSize: "0.6875rem",
               fontFamily: "var(--font-montserrat)",
+              fontSize: "0.6875rem",
               fontWeight: 600,
               color: "#fff",
             }}
@@ -182,9 +181,9 @@ export default function AlphabetCard({
           sx={{
             fontFamily: "var(--font-montserrat)",
             fontWeight: 700,
-            fontSize: "0.9375rem",
+            fontSize: "0.9rem",
             color: "text.primary",
-            mb: 0.5,
+            mb: 0.25,
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -193,59 +192,19 @@ export default function AlphabetCard({
           {alphabet.title}
         </Typography>
 
-        <Box
+        <Typography
           sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
+            fontFamily: "var(--font-montserrat)",
+            fontSize: "0.75rem",
+            color: "text.tertiary",
+            mb: 1.25,
           }}
         >
-          <Typography
-            sx={{
-              fontFamily: "var(--font-montserrat)",
-              fontSize: "0.75rem",
-              color: "text.tertiary",
-            }}
-          >
-            {formatSize(alphabet.size)}
-          </Typography>
-
-          {alphabet.course && (
-            <Chip
-              size="sm"
-              variant="soft"
-              sx={{
-                fontFamily: "var(--font-montserrat)",
-                fontSize: "0.6875rem",
-                fontWeight: 600,
-                borderRadius: "6px",
-                "[data-joy-color-scheme='light'] &": {
-                  bgcolor: "#e0f2fe",
-                  color: "#0284c7",
-                },
-                "[data-joy-color-scheme='dark'] &": {
-                  bgcolor: "rgba(168,85,247,0.1)",
-                  color: "#c084fc",
-                },
-              }}
-            >
-              {alphabet.course.title}
-            </Chip>
-          )}
-        </Box>
+          {formatSize(alphabet.size)}
+        </Typography>
 
         {/* Actions */}
-        <Box
-          sx={{
-            display: "flex",
-            gap: 0.5,
-            mt: 1.5,
-            pt: 1.5,
-            borderTop: "1px solid",
-            "[data-joy-color-scheme='light'] &": { borderColor: "#f1f5f9" },
-            "[data-joy-color-scheme='dark'] &": { borderColor: "#26262d" },
-          }}
-        >
+        <Box sx={{ display: "flex", gap: 0.75 }}>
           <Tooltip title="Tahrirlash" placement="top">
             <IconButton
               size="sm"
@@ -254,9 +213,6 @@ export default function AlphabetCard({
               sx={{
                 flex: 1,
                 borderRadius: "8px",
-                fontFamily: "var(--font-montserrat)",
-                fontSize: "0.75rem",
-                fontWeight: 600,
                 "[data-joy-color-scheme='light'] &": {
                   bgcolor: "#e0f2fe",
                   color: "#0284c7",
@@ -269,7 +225,7 @@ export default function AlphabetCard({
                 },
               }}
             >
-              <RiEditLine size={16} />
+              <RiEditLine size={15} />
             </IconButton>
           </Tooltip>
 
@@ -293,7 +249,7 @@ export default function AlphabetCard({
                 },
               }}
             >
-              <RiDeleteBinLine size={16} />
+              <RiDeleteBinLine size={15} />
             </IconButton>
           </Tooltip>
         </Box>

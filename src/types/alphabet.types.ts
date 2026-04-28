@@ -4,7 +4,8 @@ export interface Alphabet {
   id: number;
   title: string;
   videoUrl: string;
-  vimeoVideoId: string;
+  vimeoVideoId?: string | null;
+  vimeoEmbedUrl?: string | null;
   order: number;
   mimetype: string;
   size: number;

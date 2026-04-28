@@ -1,4 +1,4 @@
-// src/components/alphabet/AlphabetModal/index.tsx
+// src/components/courses/sections/Alphabet/AlphabetModal/index.tsx
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -18,9 +18,9 @@ import {
 } from "@mui/joy";
 import {
   RiUploadCloud2Line,
-  RiVideoLine,
-  RiCloseLine,
   RiSaveLine,
+  RiCloseLine,
+  RiVideoLine,
 } from "react-icons/ri";
 import {
   Alphabet,
@@ -36,13 +36,12 @@ interface AlphabetModalProps {
   onClose: () => void;
   onSuccess: () => void;
   editData?: Alphabet | null;
-  courses: { id: number; title: string }[];
+  courseId: number;
 }
 
 interface FormErrors {
   title?: string;
   order?: string;
-  courseId?: string;
   video?: string;
 }
 
@@ -51,40 +50,36 @@ export default function AlphabetModal({
   onClose,
   onSuccess,
   editData,
-  courses,
+  courseId,
 }: AlphabetModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("");
   const [order, setOrder] = useState("");
-  const [courseId, setCourseId] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const isEdit = !!editData;
 
   useEffect(() => {
-    if (open) {
-      if (editData) {
-        setTitle(editData.title);
-        setOrder(String(editData.order));
-        setCourseId(String(editData.course?.id ?? ""));
-      } else {
-        setTitle("");
-        setOrder("");
-        setCourseId("");
-        setVideoFile(null);
-      }
-      setErrors({});
-
-      // Modal entrance animation
-      setTimeout(() => {
+    if (!open) return;
+    if (editData) {
+      setTitle(editData.title ?? "");
+      setOrder(String(editData.order ?? ""));
+    } else {
+      setTitle("");
+      setOrder("");
+      setVideoFile(null);
+    }
+    setErrors({});
+    setTimeout(() => {
+      if (dialogRef.current) {
         gsap.fromTo(
           dialogRef.current,
-          { scale: 0.95, opacity: 0, y: 10 },
-          { scale: 1, opacity: 1, y: 0, duration: 0.3, ease: "back.out(1.2)" },
+          { scale: 0.95, opacity: 0, y: 8 },
+          { scale: 1, opacity: 1, y: 0, duration: 0.28, ease: "back.out(1.2)" },
         );
-      }, 10);
-    }
+      }
+    }, 10);
   }, [open, editData]);
 
   const validate = (): FormErrors => {
@@ -93,7 +88,6 @@ export default function AlphabetModal({
     if (!order) errs.order = "Tartib raqam kiritilishi shart";
     else if (isNaN(Number(order)) || Number(order) < 1)
       errs.order = "Musbat son kiriting";
-    if (!courseId) errs.courseId = "Kurs tanlanishi shart";
     if (!isEdit && !videoFile) errs.video = "Video fayl tanlanishi shart";
     return errs;
   };
@@ -102,11 +96,11 @@ export default function AlphabetModal({
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("video/")) {
-      setErrors((prev) => ({ ...prev, video: "Faqat video fayl yuklang" }));
+      setErrors((p) => ({ ...p, video: "Faqat video fayl yuklang" }));
       return;
     }
     setVideoFile(file);
-    setErrors((prev) => ({ ...prev, video: undefined }));
+    setErrors((p) => ({ ...p, video: undefined }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -116,41 +110,66 @@ export default function AlphabetModal({
       setErrors(errs);
       return;
     }
-
     setLoading(true);
     try {
       if (isEdit && editData) {
         const dto: UpdateAlphabetDto = {
           title,
           order: Number(order),
-          courseId: Number(courseId),
+          courseId,
           ...(videoFile && { video: videoFile }),
         };
         await AlphabetService.update(editData.id, dto);
-        useSnackbarStore
-          .getState()
-          .success("Alphabet yangilandi!", "Muvaffaqiyat");
+        useSnackbarStore.getState().success("Alphabet yangilandi!");
       } else {
         const dto: CreateAlphabetDto = {
           title,
           order: Number(order),
-          courseId: Number(courseId),
+          courseId,
           video: videoFile!,
         };
         await AlphabetService.create(dto);
-        useSnackbarStore
-          .getState()
-          .success("Alphabet yaratildi!", "Muvaffaqiyat");
+        useSnackbarStore.getState().success("Alphabet yaratildi!");
       }
       onSuccess();
       onClose();
     } catch {
-      useSnackbarStore
-        .getState()
-        .error("Xatolik yuz berdi. Qayta urinib ko'ring");
+      useSnackbarStore.getState().error("Xatolik yuz berdi");
     } finally {
       setLoading(false);
     }
+  };
+
+  const inputSx = {
+    fontFamily: "var(--font-montserrat)",
+    fontWeight: 500,
+    fontSize: "0.875rem",
+    borderRadius: "8px",
+    height: 44,
+    "[data-joy-color-scheme='light'] &": {
+      bgcolor: "#f8fafc",
+      borderColor: "#e2e8f0",
+      "& input": { color: "#0f172a" },
+    },
+    "[data-joy-color-scheme='dark'] &": {
+      bgcolor: "#26262d",
+      borderColor: "#3a3a44",
+      "& input": { color: "#fafafa" },
+    },
+  };
+
+  const labelSx = {
+    fontFamily: "var(--font-montserrat)",
+    fontWeight: 600,
+    fontSize: "0.8125rem",
+    mb: 0.75,
+    color: "text.primary",
+  };
+
+  const errorSx = {
+    fontFamily: "var(--font-montserrat)",
+    fontSize: "0.75rem",
+    color: "#ef4444",
   };
 
   return (
@@ -158,21 +177,21 @@ export default function AlphabetModal({
       <ModalDialog
         ref={dialogRef}
         sx={{
-          width: { xs: "95vw", sm: 520 },
+          width: { xs: "95vw", sm: 480 },
           maxHeight: "90vh",
           overflowY: "auto",
-          borderRadius: "20px",
+          borderRadius: "8px",
           border: "1px solid",
           p: 0,
           "[data-joy-color-scheme='light'] &": {
             bgcolor: "#ffffff",
             borderColor: "#e2e8f0",
-            boxShadow: "0 24px 48px rgba(15,23,42,0.12)",
+            boxShadow: "0 20px 40px rgba(15,23,42,0.12)",
           },
           "[data-joy-color-scheme='dark'] &": {
             bgcolor: "#1c1c21",
             borderColor: "#3a3a44",
-            boxShadow: "0 24px 48px rgba(0,0,0,0.4)",
+            boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
           },
         }}
       >
@@ -192,9 +211,9 @@ export default function AlphabetModal({
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
             <Box
               sx={{
-                width: 36,
-                height: 36,
-                borderRadius: "10px",
+                width: 34,
+                height: 34,
+                borderRadius: "8px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -208,211 +227,66 @@ export default function AlphabetModal({
                 },
               }}
             >
-              <RiVideoLine size={18} />
+              <RiVideoLine size={17} />
             </Box>
             <Typography
               sx={{
                 fontFamily: "var(--font-montserrat)",
                 fontWeight: 700,
-                fontSize: "1rem",
+                fontSize: "0.9375rem",
                 color: "text.primary",
               }}
             >
               {isEdit ? "Alphabetni tahrirlash" : "Yangi Alphabet"}
             </Typography>
           </Box>
-          <ModalClose
-            sx={{
-              position: "static",
-              borderRadius: "10px",
-              "[data-joy-color-scheme='light'] &": {
-                color: "#64748b",
-                "&:hover": { bgcolor: "#f1f5f9" },
-              },
-              "[data-joy-color-scheme='dark'] &": {
-                color: "#71717d",
-                "&:hover": { bgcolor: "#26262d" },
-              },
-            }}
-          />
+          <ModalClose sx={{ position: "static", borderRadius: "8px" }} />
         </Box>
 
         {/* Form */}
         <Box
           component="form"
           onSubmit={handleSubmit}
-          sx={{ p: 3, display: "flex", flexDirection: "column", gap: 2.5 }}
+          sx={{ p: 3, display: "flex", flexDirection: "column", gap: 2 }}
         >
           {/* Title */}
           <FormControl error={!!errors.title}>
-            <FormLabel
-              sx={{
-                fontFamily: "var(--font-montserrat)",
-                fontWeight: 600,
-                fontSize: "0.8125rem",
-                color: "text.primary",
-              }}
-            >
-              Sarlavha
-            </FormLabel>
+            <FormLabel sx={labelSx}>Sarlavha</FormLabel>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Masalan: Alif darsi"
-              sx={{
-                fontFamily: "var(--font-montserrat)",
-                borderRadius: "10px",
-                height: 44,
-                "[data-joy-color-scheme='light'] &": {
-                  bgcolor: "#f8fafc",
-                  borderColor: errors.title ? "#ef4444" : "#e2e8f0",
-                  "& input": { color: "#0f172a" },
-                },
-                "[data-joy-color-scheme='dark'] &": {
-                  bgcolor: "#26262d",
-                  borderColor: errors.title ? "#ef4444" : "#3a3a44",
-                  "& input": { color: "#fafafa" },
-                },
-              }}
+              sx={inputSx}
             />
             {errors.title && (
-              <FormHelperText
-                sx={{
-                  fontFamily: "var(--font-montserrat)",
-                  fontSize: "0.75rem",
-                  color: "#ef4444",
-                }}
-              >
-                {errors.title}
-              </FormHelperText>
+              <FormHelperText sx={errorSx}>{errors.title}</FormHelperText>
             )}
           </FormControl>
 
-          {/* Order + CourseId */}
-          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
-            {/* Order */}
-            <FormControl error={!!errors.order}>
-              <FormLabel
-                sx={{
-                  fontFamily: "var(--font-montserrat)",
-                  fontWeight: 600,
-                  fontSize: "0.8125rem",
-                  color: "text.primary",
-                }}
-              >
-                Tartib raqam
-              </FormLabel>
-              <Input
-                type="number"
-                value={order}
-                onChange={(e) => setOrder(e.target.value)}
-                placeholder="1"
-                slotProps={{ input: { min: 1 } }}
-                sx={{
-                  fontFamily: "var(--font-montserrat)",
-                  borderRadius: "10px",
-                  height: 44,
-                  "[data-joy-color-scheme='light'] &": {
-                    bgcolor: "#f8fafc",
-                    borderColor: errors.order ? "#ef4444" : "#e2e8f0",
-                    "& input": { color: "#0f172a" },
-                  },
-                  "[data-joy-color-scheme='dark'] &": {
-                    bgcolor: "#26262d",
-                    borderColor: errors.order ? "#ef4444" : "#3a3a44",
-                    "& input": { color: "#fafafa" },
-                  },
-                }}
-              />
-              {errors.order && (
-                <FormHelperText
-                  sx={{
-                    fontFamily: "var(--font-montserrat)",
-                    fontSize: "0.75rem",
-                    color: "#ef4444",
-                  }}
-                >
-                  {errors.order}
-                </FormHelperText>
-              )}
-            </FormControl>
-
-            {/* Course */}
-            <FormControl error={!!errors.courseId}>
-              <FormLabel
-                sx={{
-                  fontFamily: "var(--font-montserrat)",
-                  fontWeight: 600,
-                  fontSize: "0.8125rem",
-                  color: "text.primary",
-                }}
-              >
-                Kurs
-              </FormLabel>
-              <Box
-                component="select"
-                value={courseId}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  setCourseId(e.target.value)
-                }
-                sx={{
-                  fontFamily: "var(--font-montserrat)",
-                  fontWeight: 500,
-                  fontSize: "0.875rem",
-                  height: 44,
-                  borderRadius: "10px",
-                  border: "1px solid",
-                  px: 1.5,
-                  outline: "none",
-                  cursor: "pointer",
-                  "[data-joy-color-scheme='light'] &": {
-                    bgcolor: "#f8fafc",
-                    borderColor: errors.courseId ? "#ef4444" : "#e2e8f0",
-                    color: "#0f172a",
-                  },
-                  "[data-joy-color-scheme='dark'] &": {
-                    bgcolor: "#26262d",
-                    borderColor: errors.courseId ? "#ef4444" : "#3a3a44",
-                    color: "#fafafa",
-                  },
-                }}
-              >
-                <option value="">Kurs tanlang</option>
-                {courses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.title}
-                  </option>
-                ))}
-              </Box>
-              {errors.courseId && (
-                <FormHelperText
-                  sx={{
-                    fontFamily: "var(--font-montserrat)",
-                    fontSize: "0.75rem",
-                    color: "#ef4444",
-                  }}
-                >
-                  {errors.courseId}
-                </FormHelperText>
-              )}
-            </FormControl>
-          </Box>
+          {/* Order */}
+          <FormControl error={!!errors.order}>
+            <FormLabel sx={labelSx}>Tartib raqam</FormLabel>
+            <Input
+              type="number"
+              value={order}
+              onChange={(e) => setOrder(e.target.value)}
+              placeholder="1"
+              slotProps={{ input: { min: 1 } }}
+              sx={inputSx}
+            />
+            {errors.order && (
+              <FormHelperText sx={errorSx}>{errors.order}</FormHelperText>
+            )}
+          </FormControl>
 
           {/* Video upload */}
           <FormControl error={!!errors.video}>
-            <FormLabel
-              sx={{
-                fontFamily: "var(--font-montserrat)",
-                fontWeight: 600,
-                fontSize: "0.8125rem",
-                color: "text.primary",
-              }}
-            >
+            <FormLabel sx={labelSx}>
               Video fayl {isEdit && "(ixtiyoriy)"}
             </FormLabel>
             <Box
               component="label"
-              htmlFor="video-upload"
+              htmlFor="alphabet-video"
               sx={{
                 display: "flex",
                 flexDirection: "column",
@@ -420,7 +294,7 @@ export default function AlphabetModal({
                 justifyContent: "center",
                 gap: 1,
                 p: 3,
-                borderRadius: "12px",
+                borderRadius: "8px",
                 border: "2px dashed",
                 cursor: "pointer",
                 transition: "all 0.2s ease",
@@ -448,7 +322,7 @@ export default function AlphabetModal({
               }}
             >
               <input
-                id="video-upload"
+                id="alphabet-video"
                 type="file"
                 accept="video/*"
                 style={{ display: "none" }}
@@ -456,9 +330,9 @@ export default function AlphabetModal({
               />
               <Box
                 sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "10px",
+                  width: 38,
+                  height: 38,
+                  borderRadius: "8px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -472,20 +346,18 @@ export default function AlphabetModal({
                   },
                 }}
               >
-                <RiUploadCloud2Line size={20} />
+                <RiUploadCloud2Line size={18} />
               </Box>
               <Typography
                 sx={{
                   fontFamily: "var(--font-montserrat)",
                   fontWeight: 600,
                   fontSize: "0.8125rem",
-                  color: videoFile ? "primary" : "text.secondary",
+                  color: videoFile ? "text.primary" : "text.secondary",
                   textAlign: "center",
                 }}
               >
-                {videoFile
-                  ? videoFile.name
-                  : "Video faylni bu yerga tashlang yoki bosing"}
+                {videoFile ? videoFile.name : "Video faylni tanlang"}
               </Typography>
               {!videoFile && (
                 <Typography
@@ -495,20 +367,12 @@ export default function AlphabetModal({
                     color: "text.tertiary",
                   }}
                 >
-                  MP4, MOV, AVI formatlar qo'llab-quvvatlanadi
+                  MP4, MOV, AVI
                 </Typography>
               )}
             </Box>
             {errors.video && (
-              <FormHelperText
-                sx={{
-                  fontFamily: "var(--font-montserrat)",
-                  fontSize: "0.75rem",
-                  color: "#ef4444",
-                }}
-              >
-                {errors.video}
-              </FormHelperText>
+              <FormHelperText sx={errorSx}>{errors.video}</FormHelperText>
             )}
           </FormControl>
 
@@ -530,7 +394,7 @@ export default function AlphabetModal({
               sx={{
                 fontFamily: "var(--font-montserrat)",
                 fontWeight: 600,
-                borderRadius: "10px",
+                borderRadius: "8px",
               }}
             >
               Bekor qilish
@@ -551,16 +415,19 @@ export default function AlphabetModal({
               sx={{
                 fontFamily: "var(--font-montserrat)",
                 fontWeight: 700,
-                borderRadius: "10px",
+                borderRadius: "8px",
+                border: "none",
                 "[data-joy-color-scheme='light'] &": {
                   bgcolor: "#0284c7",
                   color: "#fff",
                   "&:hover": { bgcolor: "#0369a1" },
+                  "&:disabled": { opacity: 0.6 },
                 },
                 "[data-joy-color-scheme='dark'] &": {
                   bgcolor: "#9333ea",
                   color: "#fff",
                   "&:hover": { bgcolor: "#7e22ce" },
+                  "&:disabled": { opacity: 0.6 },
                 },
               }}
             >
