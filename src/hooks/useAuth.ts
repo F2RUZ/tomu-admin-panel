@@ -1,3 +1,4 @@
+// src/hooks/useAuth.ts
 "use client";
 
 import { useState } from "react";
@@ -5,16 +6,13 @@ import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import AuthService from "@/services/authService";
 import { useAuthStore } from "@/store/authStore";
-import { useSnackbar } from "@/hooks/useSnackbar";
+import { useSnackbarStore } from "@/store/snackbarStore";
 import { LoginFormValues, LoginFormErrors } from "@/types/auth.types";
 import { ROUTES } from "@/constants/routes";
 import { User } from "@/types/common.types";
 
 export const useAuth = () => {
   const router = useRouter();
-  const { setAuth } = useAuthStore();
-  const { success, error: showError } = useSnackbar();
-
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<LoginFormErrors>({});
 
@@ -39,37 +37,26 @@ export const useAuth = () => {
       setErrors(validationErrors);
       return;
     }
-
     setErrors({});
     setLoading(true);
-
     try {
       const response = await AuthService.login({
         phoneNumber: values.phoneNumber.replace(/\s/g, ""),
         password: values.password,
       });
-
       const { data: userData, tokens } = response.data;
-
-      // Backend "admin" yoki "director" kichik harf qaytaradi
       const role = userData.role?.toLowerCase();
       if (role !== "admin" && role !== "director") {
-        setErrors({
-          general: "Bu panel faqat adminlar uchun. Kirish huquqingiz yo'q.",
-        });
-        showError("Kirish huquqingiz yo'q", "Ruxsat xatosi");
+        setErrors({ general: "Bu panel faqat adminlar uchun." });
+        useSnackbarStore.getState().error("Kirish huquqingiz yo'q");
         setLoading(false);
         return;
       }
-
-      // Cookie — middleware "accessToken" tekshiradi
       Cookies.set("accessToken", tokens.access_token, {
         expires: 30,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
       });
-
-      // Zustand store
       const user: User = {
         id: String(userData.id),
         firstName: userData.firstName,
@@ -82,39 +69,37 @@ export const useAuth = () => {
         createdAt: userData.createdAt,
         updatedAt: userData.lastUpdatedAt ?? userData.createdAt,
       };
-
-      setAuth(user, {
+      useAuthStore.getState().setAuth(user, {
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
       });
-
-      success(`Xush kelibsiz, ${userData.firstName}!`, "Muvaffaqiyat");
+      useSnackbarStore.getState().success(`Xush kelibsiz, ${userData.firstName}!`);
       router.push(ROUTES.DASHBOARD);
     } catch (err: unknown) {
-      const axiosErr = err as {
-        response?: { data?: { message?: string }; status?: number };
-      };
+      const axiosErr = err as { response?: { status?: number } };
       const status = axiosErr?.response?.status;
-
       if (status === 400) {
         setErrors({ general: "Telefon raqam yoki parol noto'g'ri" });
-        showError("Telefon raqam yoki parol noto'g'ri");
+        useSnackbarStore.getState().error("Telefon raqam yoki parol noto'g'ri");
       } else if (status === 429) {
         setErrors({ general: "Juda ko'p urinish. Biroz kuting" });
-        showError("Juda ko'p urinish. Biroz kuting", "Limit xatosi");
+        useSnackbarStore.getState().warning("Juda ko'p urinish");
       } else {
-        setErrors({ general: "Xatolik yuz berdi. Qayta urinib ko'ring" });
-        showError("Xatolik yuz berdi");
+        setErrors({ general: "Xatolik yuz berdi" });
+        useSnackbarStore.getState().error("Xatolik yuz berdi");
       }
     } finally {
       setLoading(false);
     }
   };
 
+  // ← Logout — cookie + store + redirect
   const logout = () => {
     Cookies.remove("accessToken");
+    Cookies.remove("refresh_token");
     useAuthStore.getState().logout();
-    router.push(ROUTES.LOGIN);
+    useSnackbarStore.getState().success("Tizimdan chiqdingiz");
+    window.location.href = "/login"; // router.push emas — to'liq sahifa yangilansin
   };
 
   return { login, logout, loading, errors, setErrors };

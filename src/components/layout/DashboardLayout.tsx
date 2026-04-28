@@ -1,49 +1,68 @@
 // src/components/layout/DashboardLayout.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Box } from "@mui/joy";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 
-interface DashboardLayoutProps {
+export default function DashboardLayout({
+  children,
+}: {
   children: React.ReactNode;
-}
-
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+}) {
   const [collapsed, setCollapsed] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          minHeight: "100vh",
+          "[data-joy-color-scheme='light'] &": { bgcolor: "#f1f5f9" },
+          "[data-joy-color-scheme='dark'] &": { bgcolor: "#0e0e12" },
+        }}
+      >
+        <Box sx={{ width: 260, flexShrink: 0 }} />
+        <Box sx={{ flex: 1 }}>{children}</Box>
+      </Box>
+    );
+  }
 
   return (
     <Box
       sx={{
         display: "flex",
         minHeight: "100vh",
-        flexDirection: "row", // ← Sidebar chap, content o'ng
+        flexDirection: "row",
         "[data-joy-color-scheme='light'] &": { bgcolor: "#f1f5f9" },
         "[data-joy-color-scheme='dark'] &": { bgcolor: "#0e0e12" },
       }}
     >
-      {/* ── Sidebar — chap tomon ── */}
-      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
-
-      {/* ── O'ng tomon: Header + Content ── */}
+      <Sidebar
+        collapsed={collapsed}
+        onToggle={() => setCollapsed((v) => !v)}
+      />
       <Box
         sx={{
           flex: 1,
           display: "flex",
           flexDirection: "column",
           minWidth: 0,
-          overflow: "hidden",
+          minHeight: "100vh",
         }}
       >
         <Header />
-
         <Box
           component="main"
           sx={{
             flex: 1,
             p: { xs: 2, md: 3 },
-            overflowY: "auto",
             overflowX: "hidden",
           }}
         >
