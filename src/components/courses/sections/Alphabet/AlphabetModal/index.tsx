@@ -15,12 +15,14 @@ import {
   FormHelperText,
   CircularProgress,
   Divider,
+  LinearProgress,
 } from "@mui/joy";
 import {
   RiUploadCloud2Line,
   RiSaveLine,
   RiCloseLine,
   RiVideoLine,
+  RiCheckLine,
 } from "react-icons/ri";
 import {
   Alphabet,
@@ -54,6 +56,7 @@ export default function AlphabetModal({
 }: AlphabetModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [title, setTitle] = useState("");
   const [order, setOrder] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -71,6 +74,7 @@ export default function AlphabetModal({
       setVideoFile(null);
     }
     setErrors({});
+    setUploadProgress(0);
     setTimeout(() => {
       if (dialogRef.current) {
         gsap.fromTo(
@@ -111,6 +115,7 @@ export default function AlphabetModal({
       return;
     }
     setLoading(true);
+    setUploadProgress(0);
     try {
       if (isEdit && editData) {
         const dto: UpdateAlphabetDto = {
@@ -128,15 +133,21 @@ export default function AlphabetModal({
           courseId,
           video: videoFile!,
         };
-        await AlphabetService.create(dto);
-        useSnackbarStore.getState().success("Alphabet yaratildi!");
+        await AlphabetService.create(dto, (percent) => {
+          setUploadProgress(percent);
+        });
+        useSnackbarStore
+          .getState()
+          .success("Alphabet yaratildi! Vimeo da tayyorlanmoqda...");
       }
       onSuccess();
       onClose();
-    } catch {
-      useSnackbarStore.getState().error("Xatolik yuz berdi");
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? "Xatolik yuz berdi";
+      useSnackbarStore.getState().error(msg);
     } finally {
       setLoading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -172,8 +183,12 @@ export default function AlphabetModal({
     color: "#ef4444",
   };
 
+  const fileSizeMB = videoFile
+    ? (videoFile.size / (1024 * 1024)).toFixed(1)
+    : null;
+
   return (
-    <Modal open={open} onClose={onClose}>
+    <Modal open={open} onClose={loading ? undefined : onClose}>
       <ModalDialog
         ref={dialogRef}
         sx={{
@@ -240,8 +255,71 @@ export default function AlphabetModal({
               {isEdit ? "Alphabetni tahrirlash" : "Yangi Alphabet"}
             </Typography>
           </Box>
-          <ModalClose sx={{ position: "static", borderRadius: "8px" }} />
+          {!loading && (
+            <ModalClose sx={{ position: "static", borderRadius: "8px" }} />
+          )}
         </Box>
+
+        {/* Upload progress bar */}
+        {loading && uploadProgress > 0 && (
+          <Box sx={{ px: 3, pt: 2.5 }}>
+            <Box
+              sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
+            >
+              <Typography
+                sx={{
+                  fontFamily: "var(--font-montserrat)",
+                  fontSize: "0.8125rem",
+                  fontWeight: 600,
+                  color: "text.primary",
+                }}
+              >
+                {uploadProgress < 100
+                  ? "Video yuklanmoqda..."
+                  : "Vimeoga jo'natildi ✓"}
+              </Typography>
+              <Typography
+                sx={{
+                  fontFamily: "var(--font-montserrat)",
+                  fontSize: "0.8125rem",
+                  fontWeight: 700,
+                  "[data-joy-color-scheme='light'] &": { color: "#0284c7" },
+                  "[data-joy-color-scheme='dark'] &": { color: "#c084fc" },
+                }}
+              >
+                {uploadProgress}%
+              </Typography>
+            </Box>
+            <LinearProgress
+              determinate
+              value={uploadProgress}
+              sx={{
+                borderRadius: "99px",
+                height: 6,
+                "[data-joy-color-scheme='light'] &": {
+                  bgcolor: "#e0f2fe",
+                  "& .MuiLinearProgress-bar": { bgcolor: "#0284c7" },
+                },
+                "[data-joy-color-scheme='dark'] &": {
+                  bgcolor: "#26262d",
+                  "& .MuiLinearProgress-bar": { bgcolor: "#9333ea" },
+                },
+              }}
+            />
+            {uploadProgress === 100 && (
+              <Typography
+                sx={{
+                  fontFamily: "var(--font-montserrat)",
+                  fontSize: "0.75rem",
+                  color: "text.tertiary",
+                  mt: 0.75,
+                }}
+              >
+                Vimeo da qayta ishlanmoqda... Bu bir necha daqiqa olishi mumkin
+              </Typography>
+            )}
+          </Box>
+        )}
 
         {/* Form */}
         <Box
@@ -256,6 +334,7 @@ export default function AlphabetModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Masalan: Alif darsi"
+              disabled={loading}
               sx={inputSx}
             />
             {errors.title && (
@@ -271,6 +350,7 @@ export default function AlphabetModal({
               value={order}
               onChange={(e) => setOrder(e.target.value)}
               placeholder="1"
+              disabled={loading}
               slotProps={{ input: { min: 1 } }}
               sx={inputSx}
             />
@@ -296,7 +376,7 @@ export default function AlphabetModal({
                 p: 3,
                 borderRadius: "8px",
                 border: "2px dashed",
-                cursor: "pointer",
+                cursor: loading ? "not-allowed" : "pointer",
                 transition: "all 0.2s ease",
                 "[data-joy-color-scheme='light'] &": {
                   borderColor: errors.video
@@ -305,7 +385,9 @@ export default function AlphabetModal({
                       ? "#0284c7"
                       : "#e2e8f0",
                   bgcolor: videoFile ? "#f0f9ff" : "#f8fafc",
-                  "&:hover": { borderColor: "#0284c7", bgcolor: "#f0f9ff" },
+                  "&:hover": !loading
+                    ? { borderColor: "#0284c7", bgcolor: "#f0f9ff" }
+                    : {},
                 },
                 "[data-joy-color-scheme='dark'] &": {
                   borderColor: errors.video
@@ -314,10 +396,12 @@ export default function AlphabetModal({
                       ? "#9333ea"
                       : "#3a3a44",
                   bgcolor: videoFile ? "rgba(147,51,234,0.05)" : "#26262d",
-                  "&:hover": {
-                    borderColor: "#9333ea",
-                    bgcolor: "rgba(147,51,234,0.05)",
-                  },
+                  "&:hover": !loading
+                    ? {
+                        borderColor: "#9333ea",
+                        bgcolor: "rgba(147,51,234,0.05)",
+                      }
+                    : {},
                 },
               }}
             >
@@ -327,6 +411,7 @@ export default function AlphabetModal({
                 accept="video/*"
                 style={{ display: "none" }}
                 onChange={handleFileChange}
+                disabled={loading}
               />
               <Box
                 sx={{
@@ -346,7 +431,11 @@ export default function AlphabetModal({
                   },
                 }}
               >
-                <RiUploadCloud2Line size={18} />
+                {videoFile ? (
+                  <RiCheckLine size={18} />
+                ) : (
+                  <RiUploadCloud2Line size={18} />
+                )}
               </Box>
               <Typography
                 sx={{
@@ -359,6 +448,17 @@ export default function AlphabetModal({
               >
                 {videoFile ? videoFile.name : "Video faylni tanlang"}
               </Typography>
+              {videoFile && fileSizeMB && (
+                <Typography
+                  sx={{
+                    fontFamily: "var(--font-montserrat)",
+                    fontSize: "0.75rem",
+                    color: "text.tertiary",
+                  }}
+                >
+                  {fileSizeMB} MB
+                </Typography>
+              )}
               {!videoFile && (
                 <Typography
                   sx={{
@@ -367,7 +467,7 @@ export default function AlphabetModal({
                     color: "text.tertiary",
                   }}
                 >
-                  MP4, MOV, AVI
+                  MP4, MOV, AVI — maksimal hajm cheklanmagan
                 </Typography>
               )}
             </Box>
@@ -421,17 +521,23 @@ export default function AlphabetModal({
                   bgcolor: "#0284c7",
                   color: "#fff",
                   "&:hover": { bgcolor: "#0369a1" },
-                  "&:disabled": { opacity: 0.6 },
+                  "&:disabled": { opacity: 0.7 },
                 },
                 "[data-joy-color-scheme='dark'] &": {
                   bgcolor: "#9333ea",
                   color: "#fff",
                   "&:hover": { bgcolor: "#7e22ce" },
-                  "&:disabled": { opacity: 0.6 },
+                  "&:disabled": { opacity: 0.7 },
                 },
               }}
             >
-              {loading ? "Saqlanmoqda..." : isEdit ? "Yangilash" : "Yaratish"}
+              {loading
+                ? uploadProgress > 0
+                  ? `Yuklanmoqda ${uploadProgress}%`
+                  : "Tayyorlanmoqda..."
+                : isEdit
+                  ? "Yangilash"
+                  : "Yaratish"}
             </Button>
           </Box>
         </Box>
