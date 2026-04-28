@@ -1,14 +1,13 @@
-// src/app/(dashboard)/courses/[id]/alphabet/page.tsx
+// src/app/(dashboard)/courses/[id]/page.tsx
 "use client";
-
 import { use } from "react";
-import AlphabetTable from "@/components/courses/sections/Alphabet/AlphabetTable";
+import CourseInfo from "@/components/courses/CourseInfo";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-export default function AlphabetPage({ params }: PageProps) {
+export default function CourseDetailPage({ params }: PageProps) {
   const { id } = use(params);
-  return <AlphabetTable courseId={Number(id)} />;
+  return <CourseInfo courseId={id} />;
 }

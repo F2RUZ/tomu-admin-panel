@@ -1,8 +1,7 @@
 // src/app/(dashboard)/courses/[id]/alphabet/page.tsx
 "use client";
-
 import { use } from "react";
-import AlphabetList from "@/components/courses/sections/Alphabet/AlphabetList";
+import AlphabetTable from "@/components/courses/sections/Alphabet/AlphabetTable";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -10,5 +9,5 @@ interface PageProps {
 
 export default function AlphabetPage({ params }: PageProps) {
   const { id } = use(params);
-  return <AlphabetList courseId={Number(id)} />;
+  return <AlphabetTable courseId={Number(id)} />;
 }

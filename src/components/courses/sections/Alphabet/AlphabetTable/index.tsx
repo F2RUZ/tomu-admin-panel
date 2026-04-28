@@ -1,7 +1,8 @@
 // src/components/courses/sections/Alphabet/AlphabetTable/index.tsx
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Box,
   Typography,
@@ -43,113 +44,93 @@ const formatSize = (bytes: number): string => {
   return `${(bytes / 1024).toFixed(0)} KB`;
 };
 
-// ─── Skeleton row ─────────────────────────────────────────────────────────────
-function SkeletonRow({ cols }: { cols: number }) {
-  const cell = (width: string | number) => (
-    <Box
-      sx={{
-        height: 16,
-        width,
-        borderRadius: "6px",
-        "@keyframes shimmer": {
-          "0%": { opacity: 1 },
-          "50%": { opacity: 0.35 },
-          "100%": { opacity: 1 },
-        },
-        animation: "shimmer 1.4s ease-in-out infinite",
-        "[data-joy-color-scheme='light'] &": { bgcolor: "#e2e8f0" },
-        "[data-joy-color-scheme='dark'] &": { bgcolor: "#3a3a44" },
-      }}
-    />
-  );
-
+function SkeletonRow() {
+  const shimmer = {
+    borderRadius: "6px",
+    "@keyframes shimmer": {
+      "0%": { opacity: 1 },
+      "50%": { opacity: 0.35 },
+      "100%": { opacity: 1 },
+    },
+    animation: "shimmer 1.4s ease-in-out infinite",
+    "[data-joy-color-scheme='light'] &": { bgcolor: "#e2e8f0" },
+    "[data-joy-color-scheme='dark'] &": { bgcolor: "#3a3a44" },
+  };
   return (
     <tr>
-      <td style={{ padding: "14px 16px" }}>{cell(24)}</td>
+      <td style={{ padding: "14px 16px" }}>
+        <Box sx={{ ...shimmer, width: 24, height: 16 }} />
+      </td>
       <td style={{ padding: "14px 16px" }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           <Box
             sx={{
+              ...shimmer,
               width: 36,
               height: 36,
               borderRadius: "8px",
               flexShrink: 0,
-              "@keyframes shimmer": {
-                "0%": { opacity: 1 },
-                "50%": { opacity: 0.35 },
-                "100%": { opacity: 1 },
-              },
-              animation: "shimmer 1.4s ease-in-out infinite",
-              "[data-joy-color-scheme='light'] &": { bgcolor: "#e2e8f0" },
-              "[data-joy-color-scheme='dark'] &": { bgcolor: "#3a3a44" },
             }}
           />
-          {cell(160)}
+          <Box sx={{ ...shimmer, width: 160, height: 16 }} />
         </Box>
       </td>
-      <td style={{ padding: "14px 16px" }}>{cell(28)}</td>
-      <td style={{ padding: "14px 16px" }}>{cell(56)}</td>
-      <td style={{ padding: "14px 16px" }}>{cell(60)}</td>
+      <td style={{ padding: "14px 16px" }}>
+        <Box sx={{ ...shimmer, width: 28, height: 28, borderRadius: "6px" }} />
+      </td>
+      <td style={{ padding: "14px 16px" }}>
+        <Box sx={{ ...shimmer, width: 56, height: 16 }} />
+      </td>
+      <td style={{ padding: "14px 16px" }}>
+        <Box sx={{ ...shimmer, width: 60, height: 16 }} />
+      </td>
       <td style={{ padding: "14px 16px" }}>
         <Box sx={{ display: "flex", gap: 0.75 }}>
-          {[0, 1].map((i) => (
-            <Box
-              key={i}
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: "8px",
-                "@keyframes shimmer": {
-                  "0%": { opacity: 1 },
-                  "50%": { opacity: 0.35 },
-                  "100%": { opacity: 1 },
-                },
-                animation: `shimmer 1.4s ease-in-out ${i * 0.15}s infinite`,
-                "[data-joy-color-scheme='light'] &": { bgcolor: "#e2e8f0" },
-                "[data-joy-color-scheme='dark'] &": { bgcolor: "#3a3a44" },
-              }}
-            />
-          ))}
+          <Box
+            sx={{ ...shimmer, width: 32, height: 32, borderRadius: "8px" }}
+          />
+          <Box
+            sx={{ ...shimmer, width: 32, height: 32, borderRadius: "8px" }}
+          />
         </Box>
       </td>
     </tr>
   );
 }
 
-// ─── Row separator ────────────────────────────────────────────────────────────
-const rowSep = {
-  "[data-joy-color-scheme='light'] &": { borderBottom: "1px solid #f1f5f9" },
-  "[data-joy-color-scheme='dark'] &": { borderBottom: "1px solid #26262d" },
-};
-
 export default function AlphabetTable({ courseId }: AlphabetTableProps) {
-  const [alphabets, setAlphabets] = useState<Alphabet[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(10);
+  const [perPage, setPerPage] = useState(8);
   const [modalOpen, setModalOpen] = useState(false);
   const [editData, setEditData] = useState<Alphabet | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Alphabet | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
   const [videoTarget, setVideoTarget] = useState<Alphabet | null>(null);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await AlphabetService.getByCourse(courseId);
-      setAlphabets(Array.isArray(res.data) ? res.data : []);
-    } catch {
-      useSnackbarStore.getState().error("Alifbo darslarini yuklashda xatolik");
-    } finally {
-      setLoading(false);
-    }
-  }, [courseId]);
+  // ── useQuery ──────────────────────────────────────────────────────────────
+  const { data, isLoading } = useQuery({
+    queryKey: ["alphabets", courseId],
+    queryFn: () => AlphabetService.getByCourse(courseId),
+    select: (res) => (Array.isArray(res.data) ? res.data : []),
+  });
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const alphabets = data ?? [];
 
+  // ── useMutation — delete ──────────────────────────────────────────────────
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => AlphabetService.delete(id),
+    onSuccess: () => {
+      useSnackbarStore.getState().success("Alphabet o'chirildi");
+      queryClient.invalidateQueries({ queryKey: ["alphabets", courseId] });
+      setDeleteTarget(null);
+    },
+    onError: () => {
+      useSnackbarStore.getState().error("O'chirishda xatolik");
+    },
+  });
+
+  // ── Filter + Pagination ───────────────────────────────────────────────────
   const filtered = useMemo(() => {
     if (!search.trim()) return alphabets;
     const q = search.toLowerCase();
@@ -161,34 +142,7 @@ export default function AlphabetTable({ courseId }: AlphabetTableProps) {
     return filtered.slice(start, start + perPage);
   }, [filtered, page, perPage]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [search]);
-
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    setDeleteLoading(true);
-    try {
-      await AlphabetService.delete(deleteTarget.id);
-      useSnackbarStore.getState().success("Alphabet o'chirildi");
-      setDeleteTarget(null);
-      await fetchData();
-    } catch {
-      useSnackbarStore.getState().error("O'chirishda xatolik");
-    } finally {
-      setDeleteLoading(false);
-    }
-  };
-
   const tdStyle: React.CSSProperties = { padding: "14px 16px" };
-  const thStyle: React.CSSProperties = {
-    padding: "12px 16px",
-    textAlign: "left",
-    position: "sticky",
-    top: 0,
-    zIndex: 2,
-  };
-
   const columns = ["#", "Dars nomi", "Tartib", "Davomiylik", "Hajm", "Amallar"];
   const widths = ["56px", "auto", "80px", "120px", "100px", "110px"];
 
@@ -206,11 +160,13 @@ export default function AlphabetTable({ courseId }: AlphabetTableProps) {
         }}
       />
 
-      {/* Search */}
       <Box sx={{ mb: 2 }}>
         <Input
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           placeholder="Dars qidirish..."
           startDecorator={<RiSearchLine size={16} />}
           sx={{
@@ -232,7 +188,6 @@ export default function AlphabetTable({ courseId }: AlphabetTableProps) {
         />
       </Box>
 
-      {/* Table container */}
       <Box
         sx={{
           borderRadius: "8px",
@@ -248,13 +203,10 @@ export default function AlphabetTable({ courseId }: AlphabetTableProps) {
           },
         }}
       >
-        {/* Scrollable area */}
         <Box
           sx={{
             overflowX: "auto",
-            overflowY: "auto",
-            maxHeight: "calc(100vh - 340px)",
-            "&::-webkit-scrollbar": { width: 5, height: 5 },
+            "&::-webkit-scrollbar": { height: 5 },
             "&::-webkit-scrollbar-track": { background: "transparent" },
             "[data-joy-color-scheme='light'] &::-webkit-scrollbar-thumb": {
               background: "#cbd5e1",
@@ -269,11 +221,17 @@ export default function AlphabetTable({ courseId }: AlphabetTableProps) {
           <table
             style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}
           >
-            {/* ─── THEAD ────────────────────────────────────────────── */}
             <thead>
               <tr>
                 {columns.map((col, i) => (
-                  <th key={col} style={{ ...thStyle, width: widths[i] }}>
+                  <th
+                    key={col}
+                    style={{
+                      padding: "12px 16px",
+                      textAlign: "left",
+                      width: widths[i],
+                    }}
+                  >
                     <Box
                       sx={{
                         fontFamily: "var(--font-montserrat)",
@@ -281,17 +239,14 @@ export default function AlphabetTable({ courseId }: AlphabetTableProps) {
                         fontSize: "0.6875rem",
                         letterSpacing: "0.06em",
                         textTransform: "uppercase",
-                        py: 0.5,
                         pb: 1.5,
                         borderBottom: "2px solid",
                         "[data-joy-color-scheme='light'] &": {
                           color: "#64748b",
-                          bgcolor: "#ffffff",
                           borderColor: "#e2e8f0",
                         },
                         "[data-joy-color-scheme='dark'] &": {
                           color: "#71717d",
-                          bgcolor: "#1c1c21",
                           borderColor: "#3a3a44",
                         },
                       }}
@@ -302,12 +257,10 @@ export default function AlphabetTable({ courseId }: AlphabetTableProps) {
                 ))}
               </tr>
             </thead>
-
-            {/* ─── TBODY ────────────────────────────────────────────── */}
             <tbody>
-              {loading ? (
+              {isLoading ? (
                 Array.from({ length: perPage }).map((_, i) => (
-                  <SkeletonRow key={i} cols={6} />
+                  <SkeletonRow key={i} />
                 ))
               ) : filtered.length === 0 ? (
                 <tr>
@@ -338,7 +291,6 @@ export default function AlphabetTable({ courseId }: AlphabetTableProps) {
                 paginated.map((alphabet, idx) => (
                   <tr
                     key={alphabet.id}
-                    style={{ transition: "background 0.15s" }}
                     onMouseEnter={(e) => {
                       (e.currentTarget as HTMLElement).style.background =
                         document.documentElement.getAttribute(
@@ -352,36 +304,26 @@ export default function AlphabetTable({ courseId }: AlphabetTableProps) {
                         "transparent";
                     }}
                   >
-                    {/* # */}
                     <td style={tdStyle}>
-                      <Box sx={{ ...rowSep }}>
-                        <Typography
-                          sx={{
-                            fontFamily: "var(--font-montserrat)",
-                            fontSize: "0.8125rem",
-                            fontWeight: 500,
-                            "[data-joy-color-scheme='light'] &": {
-                              color: "#94a3b8",
-                            },
-                            "[data-joy-color-scheme='dark'] &": {
-                              color: "#52525e",
-                            },
-                          }}
-                        >
-                          {(page - 1) * perPage + idx + 1}
-                        </Typography>
-                      </Box>
+                      <Typography
+                        sx={{
+                          fontFamily: "var(--font-montserrat)",
+                          fontSize: "0.8125rem",
+                          fontWeight: 500,
+                          "[data-joy-color-scheme='light'] &": {
+                            color: "#94a3b8",
+                          },
+                          "[data-joy-color-scheme='dark'] &": {
+                            color: "#52525e",
+                          },
+                        }}
+                      >
+                        {(page - 1) * perPage + idx + 1}
+                      </Typography>
                     </td>
-
-                    {/* Dars nomi + Play */}
                     <td style={tdStyle}>
                       <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1.5,
-                          ...rowSep,
-                        }}
+                        sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
                       >
                         <Tooltip title="Videoni ko'rish" placement="top" arrow>
                           <Box
@@ -434,44 +376,37 @@ export default function AlphabetTable({ courseId }: AlphabetTableProps) {
                         </Typography>
                       </Box>
                     </td>
-
-                    {/* Tartib */}
                     <td style={tdStyle}>
-                      <Box sx={{ ...rowSep }}>
-                        <Box
-                          sx={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            width: 28,
-                            height: 28,
-                            borderRadius: "6px",
-                            fontFamily: "var(--font-montserrat)",
-                            fontWeight: 700,
-                            fontSize: "0.8125rem",
-                            "[data-joy-color-scheme='light'] &": {
-                              bgcolor: "#f1f5f9",
-                              color: "#475569",
-                            },
-                            "[data-joy-color-scheme='dark'] &": {
-                              bgcolor: "#26262d",
-                              color: "#a1a1aa",
-                            },
-                          }}
-                        >
-                          {alphabet.order}
-                        </Box>
+                      <Box
+                        sx={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: 28,
+                          height: 28,
+                          borderRadius: "6px",
+                          fontFamily: "var(--font-montserrat)",
+                          fontWeight: 700,
+                          fontSize: "0.8125rem",
+                          "[data-joy-color-scheme='light'] &": {
+                            bgcolor: "#f1f5f9",
+                            color: "#475569",
+                          },
+                          "[data-joy-color-scheme='dark'] &": {
+                            bgcolor: "#26262d",
+                            color: "#a1a1aa",
+                          },
+                        }}
+                      >
+                        {alphabet.order}
                       </Box>
                     </td>
-
-                    {/* Davomiylik */}
                     <td style={tdStyle}>
                       <Box
                         sx={{
                           display: "flex",
                           alignItems: "center",
                           gap: 0.75,
-                          ...rowSep,
                         }}
                       >
                         <Box
@@ -497,25 +432,19 @@ export default function AlphabetTable({ courseId }: AlphabetTableProps) {
                         </Typography>
                       </Box>
                     </td>
-
-                    {/* Hajm */}
                     <td style={tdStyle}>
-                      <Box sx={{ ...rowSep }}>
-                        <Typography
-                          sx={{
-                            fontFamily: "var(--font-montserrat)",
-                            fontSize: "0.875rem",
-                            color: "text.tertiary",
-                          }}
-                        >
-                          {formatSize(alphabet.size)}
-                        </Typography>
-                      </Box>
+                      <Typography
+                        sx={{
+                          fontFamily: "var(--font-montserrat)",
+                          fontSize: "0.875rem",
+                          color: "text.tertiary",
+                        }}
+                      >
+                        {formatSize(alphabet.size)}
+                      </Typography>
                     </td>
-
-                    {/* Amallar */}
                     <td style={tdStyle}>
-                      <Box sx={{ display: "flex", gap: 0.75, ...rowSep }}>
+                      <Box sx={{ display: "flex", gap: 0.75 }}>
                         <Tooltip title="Tahrirlash" placement="top" arrow>
                           <IconButton
                             size="sm"
@@ -541,7 +470,6 @@ export default function AlphabetTable({ courseId }: AlphabetTableProps) {
                             <RiEditLine size={15} />
                           </IconButton>
                         </Tooltip>
-
                         <Tooltip title="O'chirish" placement="top" arrow>
                           <IconButton
                             size="sm"
@@ -576,8 +504,7 @@ export default function AlphabetTable({ courseId }: AlphabetTableProps) {
         </Box>
       </Box>
 
-      {/* Pagination */}
-      {!loading && filtered.length > 0 && (
+      {!isLoading && filtered.length > 0 && (
         <Pagination
           total={filtered.length}
           page={page}
@@ -590,7 +517,7 @@ export default function AlphabetTable({ courseId }: AlphabetTableProps) {
         />
       )}
 
-      {/* ─── Video modal ─────────────────────────────────────────────── */}
+      {/* Video Modal */}
       <Modal open={!!videoTarget} onClose={() => setVideoTarget(null)}>
         <ModalDialog
           sx={{
@@ -603,7 +530,6 @@ export default function AlphabetTable({ courseId }: AlphabetTableProps) {
             borderColor: "#27272a",
           }}
         >
-          {/* Header */}
           <Box
             sx={{
               display: "flex",
@@ -650,8 +576,6 @@ export default function AlphabetTable({ courseId }: AlphabetTableProps) {
               }}
             />
           </Box>
-
-          {/* Video */}
           <Box sx={{ aspectRatio: "16/9", bgcolor: "#000" }}>
             {videoTarget?.vimeoEmbedUrl ? (
               <iframe
@@ -686,8 +610,6 @@ export default function AlphabetTable({ courseId }: AlphabetTableProps) {
               </Box>
             )}
           </Box>
-
-          {/* Footer info */}
           <Box
             sx={{
               px: 2.5,
@@ -751,25 +673,25 @@ export default function AlphabetTable({ courseId }: AlphabetTableProps) {
         </ModalDialog>
       </Modal>
 
-      {/* Create/Edit Modal */}
       <AlphabetModal
         open={modalOpen}
         onClose={() => {
           setModalOpen(false);
           setEditData(null);
         }}
-        onSuccess={fetchData}
+        onSuccess={() =>
+          queryClient.invalidateQueries({ queryKey: ["alphabets", courseId] })
+        }
         editData={editData}
         courseId={courseId}
       />
 
-      {/* Delete Confirm */}
       <ConfirmModal
         open={!!deleteTarget}
         title="Alphabetni o'chirish"
-        message={`"${deleteTarget?.title}" darsini o'chirasizmi? Bu amalni qaytarib bo'lmaydi.`}
-        loading={deleteLoading}
-        onConfirm={handleDelete}
+        message={`"${deleteTarget?.title}" darsini o'chirasizmi?`}
+        loading={deleteMutation.isPending}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
         onClose={() => setDeleteTarget(null)}
       />
     </Box>

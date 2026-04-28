@@ -30,67 +30,6 @@ export default function Pagination({
   const start = total === 0 ? 0 : (page - 1) * perPage + 1;
   const end = Math.min(page * perPage, total);
 
-  const btnSx = (disabled: boolean) => ({
-    borderRadius: "8px",
-    width: 32,
-    height: 32,
-    minWidth: 32,
-    opacity: disabled ? 0.35 : 1,
-    cursor: disabled ? "not-allowed" : "pointer",
-    "[data-joy-color-scheme='light'] &": {
-      bgcolor: "#f1f5f9",
-      color: "#475569",
-      "&:hover": { bgcolor: disabled ? "#f1f5f9" : "#e2e8f0" },
-    },
-    "[data-joy-color-scheme='dark'] &": {
-      bgcolor: "#26262d",
-      color: "#a1a1aa",
-      "&:hover": { bgcolor: disabled ? "#26262d" : "#3a3a44" },
-    },
-  });
-
-  const activeBtnSx = {
-    borderRadius: "8px",
-    width: 32,
-    height: 32,
-    minWidth: 32,
-    fontFamily: "var(--font-montserrat)",
-    fontWeight: 700,
-    fontSize: "0.8125rem",
-    border: "none",
-    "[data-joy-color-scheme='light'] &": {
-      bgcolor: "#0284c7",
-      color: "#fff",
-    },
-    "[data-joy-color-scheme='dark'] &": {
-      bgcolor: "#9333ea",
-      color: "#fff",
-    },
-  };
-
-  const inactiveBtnSx = {
-    borderRadius: "8px",
-    width: 32,
-    height: 32,
-    minWidth: 32,
-    fontFamily: "var(--font-montserrat)",
-    fontWeight: 500,
-    fontSize: "0.8125rem",
-    cursor: "pointer",
-    border: "none",
-    "[data-joy-color-scheme='light'] &": {
-      bgcolor: "#f1f5f9",
-      color: "#475569",
-      "&:hover": { bgcolor: "#e2e8f0" },
-    },
-    "[data-joy-color-scheme='dark'] &": {
-      bgcolor: "#26262d",
-      color: "#a1a1aa",
-      "&:hover": { bgcolor: "#3a3a44" },
-    },
-  };
-
-  // Page raqamlari — max 5 ta
   const getPages = () => {
     if (totalPages <= 5)
       return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -107,6 +46,26 @@ export default function Pagination({
   };
 
   if (total === 0) return null;
+
+  const navBtnSx = (disabled: boolean) => ({
+    borderRadius: "8px",
+    width: 32,
+    height: 32,
+    minWidth: 32,
+    opacity: disabled ? 0.35 : 1,
+    cursor: disabled ? "not-allowed" : "pointer",
+    border: "none",
+    "[data-joy-color-scheme='light'] &": {
+      bgcolor: "#f1f5f9",
+      color: "#475569",
+      "&:hover": { bgcolor: disabled ? "#f1f5f9" : "#e2e8f0" },
+    },
+    "[data-joy-color-scheme='dark'] &": {
+      bgcolor: "#26262d",
+      color: "#a1a1aa",
+      "&:hover": { bgcolor: disabled ? "#26262d" : "#3a3a44" },
+    },
+  });
 
   return (
     <Box
@@ -129,62 +88,13 @@ export default function Pagination({
           sx={{
             fontFamily: "var(--font-montserrat)",
             fontSize: "0.8125rem",
-            color: "text.tertiary",
+            "[data-joy-color-scheme='light'] &": { color: "#64748b" },
+            "[data-joy-color-scheme='dark'] &": { color: "#71717d" },
             whiteSpace: "nowrap",
           }}
         >
           {start}–{end} / {total} ta
         </Typography>
-
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography
-            sx={{
-              fontFamily: "var(--font-montserrat)",
-              fontSize: "0.8125rem",
-              color: "text.tertiary",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Har sahifada:
-          </Typography>
-          <Select
-            value={perPage}
-            onChange={(_, v) => {
-              if (v) {
-                onPerPageChange(Number(v));
-                onPageChange(1);
-              }
-            }}
-            size="sm"
-            sx={{
-              minWidth: 70,
-              borderRadius: "8px",
-              fontFamily: "var(--font-montserrat)",
-              fontSize: "0.8125rem",
-              "[data-joy-color-scheme='light'] &": {
-                bgcolor: "#f8fafc",
-                borderColor: "#e2e8f0",
-              },
-              "[data-joy-color-scheme='dark'] &": {
-                bgcolor: "#26262d",
-                borderColor: "#3a3a44",
-              },
-            }}
-          >
-            {perPageOptions.map((opt) => (
-              <Option
-                key={opt}
-                value={opt}
-                sx={{
-                  fontFamily: "var(--font-montserrat)",
-                  fontSize: "0.8125rem",
-                }}
-              >
-                {opt}
-              </Option>
-            ))}
-          </Select>
-        </Box>
       </Box>
 
       {/* Right: page buttons */}
@@ -195,7 +105,7 @@ export default function Pagination({
           variant="soft"
           disabled={page === 1}
           onClick={() => onPageChange(1)}
-          sx={btnSx(page === 1)}
+          sx={navBtnSx(page === 1)}
         >
           <RiArrowLeftDoubleLine size={15} />
         </IconButton>
@@ -206,21 +116,52 @@ export default function Pagination({
           variant="soft"
           disabled={page === 1}
           onClick={() => onPageChange(page - 1)}
-          sx={btnSx(page === 1)}
+          sx={navBtnSx(page === 1)}
         >
           <RiArrowLeftSLine size={15} />
         </IconButton>
 
-        {/* Pages */}
+        {/* Page numbers */}
         {getPages().map((p) => (
           <Box
             key={p}
             onClick={() => onPageChange(p)}
-            sx={p === page ? activeBtnSx : inactiveBtnSx}
-            style={{
+            sx={{
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              width: 32,
+              height: 32,
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontFamily: "var(--font-montserrat)",
+              fontSize: "0.8125rem",
+              fontWeight: p === page ? 700 : 500,
+              transition: "all 0.15s ease",
+              userSelect: "none",
+              ...(p === page
+                ? {
+                    "[data-joy-color-scheme='light'] &": {
+                      bgcolor: "#0284c7",
+                      color: "#ffffff",
+                    },
+                    "[data-joy-color-scheme='dark'] &": {
+                      bgcolor: "#9333ea",
+                      color: "#ffffff",
+                    },
+                  }
+                : {
+                    "[data-joy-color-scheme='light'] &": {
+                      bgcolor: "#f1f5f9",
+                      color: "#475569",
+                      "&:hover": { bgcolor: "#e2e8f0" },
+                    },
+                    "[data-joy-color-scheme='dark'] &": {
+                      bgcolor: "#26262d",
+                      color: "#a1a1aa",
+                      "&:hover": { bgcolor: "#3a3a44", color: "#fafafa" },
+                    },
+                  }),
             }}
           >
             {p}
@@ -233,7 +174,7 @@ export default function Pagination({
           variant="soft"
           disabled={page === totalPages}
           onClick={() => onPageChange(page + 1)}
-          sx={btnSx(page === totalPages)}
+          sx={navBtnSx(page === totalPages)}
         >
           <RiArrowRightSLine size={15} />
         </IconButton>
@@ -244,7 +185,7 @@ export default function Pagination({
           variant="soft"
           disabled={page === totalPages}
           onClick={() => onPageChange(totalPages)}
-          sx={btnSx(page === totalPages)}
+          sx={navBtnSx(page === totalPages)}
         >
           <RiArrowRightDoubleLine size={15} />
         </IconButton>
