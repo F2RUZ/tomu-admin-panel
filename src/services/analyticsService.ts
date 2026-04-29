@@ -10,9 +10,10 @@ const AnalyticsService = {
     return res.data;
   },
 
+  // count field dan olamiz
   getUserCount: async (): Promise<number> => {
     const res = await api.get("/user", { params: { limit: 1, page: 1 } });
-    return res.data?.total ?? res.data?.data?.length ?? 0;
+    return res.data?.data?.count ?? 0;
   },
 
   getCourseCount: async (): Promise<number> => {

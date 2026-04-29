@@ -79,7 +79,7 @@ export default function CourseDetailSidebar({
         borderColor: "divider",
         display: "flex",
         flexDirection: "column",
-        height: "100%",
+        height: "100vh",
         transition: "width 0.3s cubic-bezier(0.4,0,0.2,1)",
         overflow: "hidden",
         "[data-joy-color-scheme='light'] &": { bgcolor: "#ffffff" },

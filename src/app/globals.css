@@ -17,8 +17,8 @@ html {
 
 /* ─── Scrollbar ──────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -212,4 +212,32 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Scrollbar — keng va chiroyli */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-joy-color-scheme="light"] ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 99px;
+}
+
+[data-joy-color-scheme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+[data-joy-color-scheme="dark"] ::-webkit-scrollbar-thumb {
+  background: #3a3a44;
+  border-radius: 99px;
+}
+
+[data-joy-color-scheme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #52525e;
 }

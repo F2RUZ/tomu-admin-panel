@@ -4,5 +4,11 @@ export const ROUTES = {
   DASHBOARD: "/dashboard",
   COURSES: "/courses",
   COURSE_DETAIL: (id: number | string) => `/courses/${id}`,
-  ALPHABET: "/alphabet",
+  USERS: "/users",
+  ORDERS: "/orders",
+  FEEDBACKS: "/feedbacks",
+  NOTIFICATIONS: "/notifications",
+  PAYMENTS_COURSE: "/payments/course",
+  PAYMENTS_LIVECHAT: "/payments/livechat",
+  LIVE_CHAT: "/live-chat",
 } as const;

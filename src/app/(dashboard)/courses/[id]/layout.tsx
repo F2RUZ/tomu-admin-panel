@@ -25,36 +25,32 @@ export default function CourseDetailLayout({ children, params }: LayoutProps) {
     <Box
       sx={{
         display: "flex",
-        // DashboardLayout main padding ni bekor qilish
         mx: -3,
         mt: -3,
-        // Qolgan balandlikni to'ldirish
-        height: "calc(100vh - 64px)",
-        overflow: "hidden",
+        minHeight: "calc(100vh - 64px)",
       }}
     >
-      {/* Nested Sidebar */}
-      <CourseDetailSidebar courseId={id} courseTitle={courseTitle} />
+      {/* Nested Sidebar — sticky */}
+      <Box
+        sx={{
+          position: "sticky",
+          top: 0,
+          height: "calc(100vh - 64px)",
+          flexShrink: 0,
+          zIndex: 10,
+        }}
+      >
+        <CourseDetailSidebar courseId={id} courseTitle={courseTitle} />
+      </Box>
 
-      {/* Content — faqat shu yerda scroll */}
+      {/* Content — erkin scroll */}
       <Box
         sx={{
           flex: 1,
-          overflowY: "auto",
-          overflowX: "hidden",
+          minWidth: 0,
           p: 3,
           "[data-joy-color-scheme='light'] &": { bgcolor: "#f1f5f9" },
           "[data-joy-color-scheme='dark'] &": { bgcolor: "#0e0e12" },
-          "&::-webkit-scrollbar": { width: 5 },
-          "&::-webkit-scrollbar-track": { background: "transparent" },
-          "[data-joy-color-scheme='light'] &::-webkit-scrollbar-thumb": {
-            background: "#cbd5e1",
-            borderRadius: "99px",
-          },
-          "[data-joy-color-scheme='dark'] &::-webkit-scrollbar-thumb": {
-            background: "#3a3a44",
-            borderRadius: "99px",
-          },
         }}
       >
         {children}
