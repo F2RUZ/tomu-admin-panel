@@ -1,7 +1,7 @@
 // src/components/users/UserTable/index.tsx
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Box,
@@ -9,18 +9,29 @@ import {
   IconButton,
   Tooltip,
   Input,
-  Select,
-  Option,
+  Modal,
+  ModalDialog,
+  ModalClose,
+  FormControl,
+  FormLabel,
+  FormHelperText,
+  Button,
+  CircularProgress,
+  Divider,
 } from "@mui/joy";
 import {
   RiSearchLine,
   RiDeleteBinLine,
   RiEyeLine,
-  RiUserLine,
   RiMenLine,
   RiWomenLine,
+  RiSaveLine,
+  RiCloseLine,
+  RiUserLine,
+  RiLockLine,
+  RiPhoneLine,
 } from "react-icons/ri";
-import { User, ROLE_CONFIG, UserRole } from "@/types/user.types";
+import { User, ROLE_CONFIG } from "@/types/user.types";
 import UserService from "@/services/userService";
 import { useSnackbarStore } from "@/store/snackbarStore";
 import ConfirmModal from "@/components/ui/ConfirmModal";
@@ -28,6 +39,490 @@ import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import Pagination from "@/components/ui/Pagination";
 import UserDetailModal from "@/components/users/UserDetailModal";
+import api from "@/services/api";
+
+// ─── Teacher Modal ─────────────────────────────────────────────────────────────
+function TeacherModal({
+  open,
+  onClose,
+  onSuccess,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [gender, setGender] = useState<"male" | "female">("male");
+  const [password, setPassword] = useState("");
+  const [courseId, setCourseId] = useState<string>("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Kurslar ro'yxati
+  const { data: coursesData } = useQuery({
+    queryKey: ["courses-for-teacher"],
+    queryFn: async () => {
+      const res = await api.get("/course");
+      return res.data?.data ?? [];
+    },
+    enabled: open,
+  });
+  const courses = Array.isArray(coursesData) ? coursesData : [];
+
+  const reset = () => {
+    setFirstName("");
+    setLastName("");
+    setPhoneNumber("");
+    setGender("male");
+    setPassword("");
+    setCourseId("");
+    setErrors({});
+  };
+
+  const validate = () => {
+    const errs: Record<string, string> = {};
+    if (!firstName.trim()) errs.firstName = "Ism kiritilishi shart";
+    if (!lastName.trim()) errs.lastName = "Familiya kiritilishi shart";
+    if (!phoneNumber.trim()) errs.phoneNumber = "Telefon kiritilishi shart";
+    if (!courseId) errs.courseId = "Kurs tanlanishi shart";
+    if (!password.trim()) errs.password = "Parol kiritilishi shart";
+    else if (password.length < 6) errs.password = "Kamida 6 ta belgi";
+    return errs;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const errs = validate();
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      return;
+    }
+    setLoading(true);
+    try {
+      await api.post("/auth/register/teacher", {
+        firstName,
+        lastName,
+        phoneNumber,
+        gender,
+        password,
+        courseId: Number(courseId),
+      });
+      useSnackbarStore.getState().success("O'qituvchi yaratildi!");
+      reset();
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message;
+      useSnackbarStore
+        .getState()
+        .error(
+          Array.isArray(msg) ? msg.join(", ") : (msg ?? "Xatolik yuz berdi"),
+        );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const inputSx = {
+    fontFamily: "var(--font-montserrat)",
+    fontSize: "0.875rem",
+    borderRadius: "8px",
+    height: 44,
+    "[data-joy-color-scheme='light'] &": {
+      bgcolor: "#f8fafc",
+      borderColor: "#e2e8f0",
+      "& input": { color: "#0f172a" },
+    },
+    "[data-joy-color-scheme='dark'] &": {
+      bgcolor: "#26262d",
+      borderColor: "#3a3a44",
+      "& input": { color: "#fafafa" },
+    },
+  };
+  const labelSx = {
+    fontFamily: "var(--font-montserrat)",
+    fontWeight: 600,
+    fontSize: "0.8125rem",
+    mb: 0.75,
+    color: "text.primary",
+  };
+  const errorSx = {
+    fontFamily: "var(--font-montserrat)",
+    fontSize: "0.75rem",
+    color: "#ef4444",
+  };
+
+  return (
+    <Modal
+      open={open}
+      onClose={
+        loading
+          ? undefined
+          : () => {
+              reset();
+              onClose();
+            }
+      }
+    >
+      <ModalDialog
+        sx={{
+          width: { xs: "95vw", sm: 480 },
+          maxHeight: "92vh",
+          overflowY: "auto",
+          borderRadius: "8px",
+          border: "1px solid",
+          p: 0,
+          "[data-joy-color-scheme='light'] &": {
+            bgcolor: "#ffffff",
+            borderColor: "#e2e8f0",
+            boxShadow: "0 20px 40px rgba(15,23,42,0.12)",
+          },
+          "[data-joy-color-scheme='dark'] &": {
+            bgcolor: "#1c1c21",
+            borderColor: "#3a3a44",
+            boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
+          },
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            px: 3,
+            py: 2.5,
+            borderBottom: "1px solid",
+            "[data-joy-color-scheme='light'] &": { borderColor: "#e2e8f0" },
+            "[data-joy-color-scheme='dark'] &": { borderColor: "#3a3a44" },
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <Box
+              sx={{
+                width: 34,
+                height: 34,
+                borderRadius: "8px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                "[data-joy-color-scheme='light'] &": {
+                  bgcolor: "#f3e8ff",
+                  color: "#9333ea",
+                },
+                "[data-joy-color-scheme='dark'] &": {
+                  bgcolor: "rgba(147,51,234,0.12)",
+                  color: "#c084fc",
+                },
+              }}
+            >
+              <RiUserLine size={17} />
+            </Box>
+            <Typography
+              sx={{
+                fontFamily: "var(--font-montserrat)",
+                fontWeight: 700,
+                fontSize: "0.9375rem",
+                color: "text.primary",
+              }}
+            >
+              Yangi o'qituvchi
+            </Typography>
+          </Box>
+          {!loading && (
+            <ModalClose sx={{ position: "static", borderRadius: "8px" }} />
+          )}
+        </Box>
+
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          sx={{ p: 3, display: "flex", flexDirection: "column", gap: 2 }}
+        >
+          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
+            <FormControl error={!!errors.firstName}>
+              <FormLabel sx={labelSx}>Ism</FormLabel>
+              <Input
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="Ali"
+                disabled={loading}
+                sx={inputSx}
+              />
+              {errors.firstName && (
+                <FormHelperText sx={errorSx}>{errors.firstName}</FormHelperText>
+              )}
+            </FormControl>
+            <FormControl error={!!errors.lastName}>
+              <FormLabel sx={labelSx}>Familiya</FormLabel>
+              <Input
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Valiyev"
+                disabled={loading}
+                sx={inputSx}
+              />
+              {errors.lastName && (
+                <FormHelperText sx={errorSx}>{errors.lastName}</FormHelperText>
+              )}
+            </FormControl>
+          </Box>
+
+          <FormControl error={!!errors.phoneNumber}>
+            <FormLabel sx={labelSx}>Telefon raqam</FormLabel>
+            <Input
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="+998901234567"
+              disabled={loading}
+              startDecorator={<RiPhoneLine size={16} />}
+              sx={inputSx}
+            />
+            {errors.phoneNumber && (
+              <FormHelperText sx={errorSx}>{errors.phoneNumber}</FormHelperText>
+            )}
+          </FormControl>
+
+          <FormControl>
+            <FormLabel sx={labelSx}>Jins</FormLabel>
+            <Box
+              sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}
+            >
+              {[
+                {
+                  value: "male",
+                  label: "Erkak",
+                  icon: <RiMenLine size={18} />,
+                },
+                {
+                  value: "female",
+                  label: "Ayol",
+                  icon: <RiWomenLine size={18} />,
+                },
+              ].map((opt) => (
+                <Box
+                  key={opt.value}
+                  onClick={() =>
+                    !loading && setGender(opt.value as "male" | "female")
+                  }
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    px: 1.5,
+                    py: 1.25,
+                    borderRadius: "8px",
+                    border: "2px solid",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    ...(gender === opt.value
+                      ? {
+                          "[data-joy-color-scheme='light'] &": {
+                            borderColor: "#9333ea",
+                            bgcolor: "#faf5ff",
+                          },
+                          "[data-joy-color-scheme='dark'] &": {
+                            borderColor: "#9333ea",
+                            bgcolor: "rgba(147,51,234,0.08)",
+                          },
+                        }
+                      : {
+                          "[data-joy-color-scheme='light'] &": {
+                            borderColor: "#e2e8f0",
+                            bgcolor: "#f8fafc",
+                            "&:hover": { borderColor: "#9333ea" },
+                          },
+                          "[data-joy-color-scheme='dark'] &": {
+                            borderColor: "#3a3a44",
+                            bgcolor: "#26262d",
+                            "&:hover": { borderColor: "#9333ea" },
+                          },
+                        }),
+                  }}
+                >
+                  <Box
+                    sx={{
+                      "[data-joy-color-scheme='light'] &": {
+                        color: gender === opt.value ? "#9333ea" : "#64748b",
+                      },
+                      "[data-joy-color-scheme='dark'] &": {
+                        color: gender === opt.value ? "#c084fc" : "#71717d",
+                      },
+                    }}
+                  >
+                    {opt.icon}
+                  </Box>
+                  <Typography
+                    sx={{
+                      fontFamily: "var(--font-montserrat)",
+                      fontWeight: 600,
+                      fontSize: "0.875rem",
+                      "[data-joy-color-scheme='light'] &": {
+                        color: gender === opt.value ? "#9333ea" : "#475569",
+                      },
+                      "[data-joy-color-scheme='dark'] &": {
+                        color: gender === opt.value ? "#c084fc" : "#a1a1aa",
+                      },
+                    }}
+                  >
+                    {opt.label}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </FormControl>
+
+          <FormControl error={!!errors.courseId}>
+            <FormLabel sx={labelSx}>Kurs</FormLabel>
+            <Box sx={{ position: "relative" }}>
+              <Box
+                component="select"
+                value={courseId}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  setCourseId(e.target.value)
+                }
+                disabled={loading}
+                sx={{
+                  width: "100%",
+                  height: 44,
+                  px: 2,
+                  pr: 5,
+                  borderRadius: "8px",
+                  border: "1px solid",
+                  fontFamily: "var(--font-montserrat)",
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  appearance: "none",
+                  cursor: "pointer",
+                  outline: "none",
+                  "[data-joy-color-scheme='light'] &": {
+                    bgcolor: "#f8fafc",
+                    borderColor: errors.courseId ? "#ef4444" : "#e2e8f0",
+                    color: "#0f172a",
+                  },
+                  "[data-joy-color-scheme='dark'] &": {
+                    bgcolor: "#26262d",
+                    borderColor: errors.courseId ? "#ef4444" : "#3a3a44",
+                    color: "#fafafa",
+                  },
+                }}
+              >
+                <option value="">— Kurs tanlang —</option>
+                {courses.map((c: any) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title}
+                  </option>
+                ))}
+              </Box>
+              <Box
+                sx={{
+                  position: "absolute",
+                  right: 12,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  pointerEvents: "none",
+                  fontSize: "0.625rem",
+                  "[data-joy-color-scheme='light'] &": { color: "#64748b" },
+                  "[data-joy-color-scheme='dark'] &": { color: "#a1a1aa" },
+                }}
+              >
+                ▼
+              </Box>
+            </Box>
+            {errors.courseId && (
+              <Box
+                sx={{
+                  fontFamily: "var(--font-montserrat)",
+                  fontSize: "0.75rem",
+                  color: "#ef4444",
+                  mt: 0.5,
+                }}
+              >
+                {errors.courseId}
+              </Box>
+            )}
+          </FormControl>
+
+          <FormControl error={!!errors.password}>
+            <FormLabel sx={labelSx}>Parol</FormLabel>
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Kamida 6 ta belgi"
+              disabled={loading}
+              startDecorator={<RiLockLine size={16} />}
+              sx={inputSx}
+            />
+            {errors.password && (
+              <FormHelperText sx={errorSx}>{errors.password}</FormHelperText>
+            )}
+          </FormControl>
+
+          <Divider
+            sx={{
+              "[data-joy-color-scheme='light'] &": { borderColor: "#e2e8f0" },
+              "[data-joy-color-scheme='dark'] &": { borderColor: "#3a3a44" },
+            }}
+          />
+
+          <Box sx={{ display: "flex", gap: 1.5, justifyContent: "flex-end" }}>
+            <Button
+              variant="plain"
+              color="neutral"
+              onClick={() => {
+                reset();
+                onClose();
+              }}
+              disabled={loading}
+              startDecorator={<RiCloseLine size={16} />}
+              sx={{
+                fontFamily: "var(--font-montserrat)",
+                fontWeight: 600,
+                borderRadius: "8px",
+              }}
+            >
+              Bekor qilish
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading}
+              startDecorator={
+                loading ? (
+                  <CircularProgress
+                    size="sm"
+                    sx={{ "--CircularProgress-size": "16px" }}
+                  />
+                ) : (
+                  <RiSaveLine size={16} />
+                )
+              }
+              sx={{
+                fontFamily: "var(--font-montserrat)",
+                fontWeight: 700,
+                borderRadius: "8px",
+                border: "none",
+                "[data-joy-color-scheme='light'] &": {
+                  bgcolor: "#9333ea",
+                  color: "#fff",
+                  "&:hover": { bgcolor: "#7e22ce" },
+                },
+                "[data-joy-color-scheme='dark'] &": {
+                  bgcolor: "#9333ea",
+                  color: "#fff",
+                  "&:hover": { bgcolor: "#7e22ce" },
+                },
+              }}
+            >
+              {loading ? "Yaratilmoqda..." : "Yaratish"}
+            </Button>
+          </Box>
+        </Box>
+      </ModalDialog>
+    </Modal>
+  );
+}
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 function SkeletonRow() {
@@ -78,15 +573,15 @@ function SkeletonRow() {
   );
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ?? "";
-
-const ROLES: { value: string; label: string }[] = [
+const ROLES = [
   { value: "", label: "Barcha rollar" },
   { value: "student", label: "Talabalar" },
   { value: "teacher", label: "O'qituvchilar" },
   { value: "admin", label: "Adminlar" },
   { value: "director", label: "Direktorlar" },
 ];
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ?? "";
 
 export default function UserTable() {
   const queryClient = useQueryClient();
@@ -97,8 +592,8 @@ export default function UserTable() {
   const [perPage, setPerPage] = useState(7);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [viewTarget, setViewTarget] = useState<User | null>(null);
+  const [teacherModalOpen, setTeacherModalOpen] = useState(false);
 
-  // Server-side pagination
   const { data, isLoading } = useQuery({
     queryKey: ["users", page, perPage, search, role],
     queryFn: () => UserService.getAll({ page, limit: perPage, search, role }),
@@ -106,7 +601,6 @@ export default function UserTable() {
 
   const users = data?.data?.users ?? [];
   const total = data?.data?.count ?? 0;
-  const totalPages = data?.data?.total_page ?? 1;
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => UserService.delete(id),
@@ -118,7 +612,6 @@ export default function UserTable() {
     onError: () => useSnackbarStore.getState().error("O'chirishda xatolik"),
   });
 
-  // Search debounce
   const handleSearch = useCallback((val: string) => {
     setSearchInput(val);
     const timer = setTimeout(() => {
@@ -152,6 +645,10 @@ export default function UserTable() {
       <PageHeader
         title="Foydalanuvchilar"
         subtitle={`Jami ${total} ta foydalanuvchi`}
+        action={{
+          label: "O'qituvchi yaratish",
+          onClick: () => setTeacherModalOpen(true),
+        }}
       />
 
       {/* Filters */}
@@ -180,40 +677,61 @@ export default function UserTable() {
             },
           }}
         />
-        <Select
-          value={role}
-          onChange={(_, v) => {
-            setRole(v ?? "");
-            setPage(1);
-          }}
-          sx={{
-            width: 180,
-            borderRadius: "8px",
-            fontFamily: "var(--font-montserrat)",
-            fontSize: "0.875rem",
-            "[data-joy-color-scheme='light'] &": {
-              bgcolor: "#f8fafc",
-              borderColor: "#e2e8f0",
-            },
-            "[data-joy-color-scheme='dark'] &": {
-              bgcolor: "#26262d",
-              borderColor: "#3a3a44",
-            },
-          }}
-        >
-          {ROLES.map((r) => (
-            <Option
-              key={r.value}
-              value={r.value}
-              sx={{
-                fontFamily: "var(--font-montserrat)",
-                fontSize: "0.875rem",
-              }}
-            >
-              {r.label}
-            </Option>
-          ))}
-        </Select>
+        {/* Native select — dark mode muammosi yo'q */}
+        <Box sx={{ position: "relative" }}>
+          <Box
+            component="select"
+            value={role}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+              setRole(e.target.value);
+              setPage(1);
+            }}
+            sx={{
+              height: 44,
+              px: 2,
+              pr: 5,
+              borderRadius: "8px",
+              border: "1px solid",
+              fontFamily: "var(--font-montserrat)",
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              appearance: "none",
+              cursor: "pointer",
+              outline: "none",
+              minWidth: 190,
+              "[data-joy-color-scheme='light'] &": {
+                bgcolor: "#f8fafc",
+                borderColor: "#e2e8f0",
+                color: "#0f172a",
+              },
+              "[data-joy-color-scheme='dark'] &": {
+                bgcolor: "#26262d",
+                borderColor: "#3a3a44",
+                color: "#fafafa",
+              },
+            }}
+          >
+            {ROLES.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </Box>
+          <Box
+            sx={{
+              position: "absolute",
+              right: 12,
+              top: "50%",
+              transform: "translateY(-50%)",
+              pointerEvents: "none",
+              fontSize: "0.625rem",
+              "[data-joy-color-scheme='light'] &": { color: "#64748b" },
+              "[data-joy-color-scheme='dark'] &": { color: "#a1a1aa" },
+            }}
+          >
+            ▼
+          </Box>
+        </Box>
       </Box>
 
       {/* Table */}
@@ -232,21 +750,7 @@ export default function UserTable() {
           },
         }}
       >
-        <Box
-          sx={{
-            overflowX: "auto",
-            "&::-webkit-scrollbar": { height: 6 },
-            "&::-webkit-scrollbar-track": { background: "transparent" },
-            "[data-joy-color-scheme='light'] &::-webkit-scrollbar-thumb": {
-              background: "#cbd5e1",
-              borderRadius: "99px",
-            },
-            "[data-joy-color-scheme='dark'] &::-webkit-scrollbar-thumb": {
-              background: "#3a3a44",
-              borderRadius: "99px",
-            },
-          }}
-        >
+        <Box sx={{ overflowX: "auto" }}>
           <table
             style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}
           >
@@ -327,7 +831,6 @@ export default function UserTable() {
                           "transparent";
                       }}
                     >
-                      {/* # */}
                       <td style={tdStyle}>
                         <Typography
                           sx={{
@@ -345,8 +848,6 @@ export default function UserTable() {
                           {(page - 1) * perPage + idx + 1}
                         </Typography>
                       </td>
-
-                      {/* User */}
                       <td style={tdStyle}>
                         <Box
                           sx={{
@@ -355,7 +856,6 @@ export default function UserTable() {
                             gap: 1.5,
                           }}
                         >
-                          {/* Avatar */}
                           <Box
                             sx={{
                               width: 36,
@@ -409,8 +909,6 @@ export default function UserTable() {
                               </Typography>
                             )}
                           </Box>
-
-                          {/* Name */}
                           <Box sx={{ minWidth: 0 }}>
                             <Typography
                               sx={{
@@ -442,22 +940,17 @@ export default function UserTable() {
                           </Box>
                         </Box>
                       </td>
-
-                      {/* Phone */}
                       <td style={tdStyle}>
                         <Typography
                           sx={{
                             fontFamily: "var(--font-montserrat)",
                             fontSize: "0.875rem",
                             color: "text.secondary",
-                            fontFeatureSettings: '"tnum"',
                           }}
                         >
                           {user.phoneNumber || "—"}
                         </Typography>
                       </td>
-
-                      {/* Role */}
                       <td style={tdStyle}>
                         <Box
                           sx={{
@@ -497,8 +990,6 @@ export default function UserTable() {
                           </Typography>
                         </Box>
                       </td>
-
-                      {/* Gender */}
                       <td style={tdStyle}>
                         {user.gender ? (
                           <Tooltip
@@ -545,8 +1036,6 @@ export default function UserTable() {
                           </Typography>
                         )}
                       </td>
-
-                      {/* Date */}
                       <td style={tdStyle}>
                         <Typography
                           sx={{
@@ -558,8 +1047,6 @@ export default function UserTable() {
                           {formatDate(user.createdAt)}
                         </Typography>
                       </td>
-
-                      {/* Actions */}
                       <td style={tdStyle}>
                         <Box sx={{ display: "flex", gap: 0.5 }}>
                           <Tooltip title="Ko'rish" placement="top" arrow>
@@ -619,7 +1106,6 @@ export default function UserTable() {
         </Box>
       </Box>
 
-      {/* Pagination */}
       {!isLoading && total > 0 && (
         <Pagination
           total={total}
@@ -634,14 +1120,16 @@ export default function UserTable() {
         />
       )}
 
-      {/* Detail Modal */}
+      <TeacherModal
+        open={teacherModalOpen}
+        onClose={() => setTeacherModalOpen(false)}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["users"] })}
+      />
       <UserDetailModal
         open={!!viewTarget}
         onClose={() => setViewTarget(null)}
         user={viewTarget}
       />
-
-      {/* Delete Confirm */}
       <ConfirmModal
         open={!!deleteTarget}
         title="Foydalanuvchini o'chirish"
