@@ -46,7 +46,7 @@ export const useAuth = () => {
       });
       const { data: userData, tokens } = response.data;
       const role = userData.role?.toLowerCase();
-      if (role !== "admin" && role !== "director") {
+      if (role !== "admin" && role !== "director" && role !== "teacher") {
         setErrors({ general: "Bu panel faqat adminlar uchun." });
         useSnackbarStore.getState().error("Kirish huquqingiz yo'q");
         setLoading(false);
