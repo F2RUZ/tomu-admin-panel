@@ -34,7 +34,7 @@ export const useThemeStore = create<ThemeStore>()(
       },
     }),
     {
-      name: "tomu-admin-theme",
+      name: "tomu-admin-color-scheme",
       onRehydrateStorage: () => (state) => {
         // Sync DOM after hydration
         if (state && typeof document !== "undefined") {

@@ -62,9 +62,11 @@ const getNavItems = (courseId: string) => [
     icon: <RiQuestionLine size={18} />,
   },
   // {
-  //   label: "Guruhlar",
-  //   path: `/courses/${courseId}/groups`,
-  //   icon: <RiGroupLine size={18} />,
+  {
+    label: "Guruhlar",
+    path: `/courses/${courseId}/groups`,
+    icon: <RiGroupLine size={18} />,
+  },
   // },
 ];
 

@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Box, Typography, Input, Select, Option } from "@mui/joy";
+import { Box, Typography, Input } from "@mui/joy";
 import { RiSearchLine, RiExchangeLine } from "react-icons/ri";
 import { ORDER_STATUS_CONFIG, PAYMENT_TYPE_CONFIG } from "@/types/order.types";
 import OrderService from "@/services/orderService";
@@ -62,10 +62,6 @@ const TYPE_OPTIONS = [
   { value: "", label: "Barcha to'lovlar" },
   { value: "livechat", label: "Live Chat" },
   { value: "tariff", label: "Tarif" },
-  { value: "payme", label: "Payme" },
-  { value: "click", label: "Click" },
-  { value: "uzum", label: "Uzum" },
-  { value: "cash", label: "Naqd" },
 ];
 
 export default function OrderTable() {
@@ -241,48 +237,40 @@ export default function OrderTable() {
             },
           }}
         />
-        <Select
-          value={statusFilter}
-          onChange={(_, v) => {
-            setStatusFilter(v ?? "");
-            setPage(1);
-          }}
-          sx={{ ...selectSx, width: 180 }}
-        >
-          {STATUS_OPTIONS.map((s) => (
-            <Option
-              key={s.value}
-              value={s.value}
-              sx={{
-                fontFamily: "var(--font-montserrat)",
-                fontSize: "0.875rem",
-              }}
-            >
-              {s.label}
-            </Option>
-          ))}
-        </Select>
-        <Select
-          value={typeFilter}
-          onChange={(_, v) => {
-            setTypeFilter(v ?? "");
-            setPage(1);
-          }}
-          sx={{ ...selectSx, width: 170 }}
-        >
-          {TYPE_OPTIONS.map((t) => (
-            <Option
-              key={t.value}
-              value={t.value}
-              sx={{
-                fontFamily: "var(--font-montserrat)",
-                fontSize: "0.875rem",
-              }}
-            >
-              {t.label}
-            </Option>
-          ))}
-        </Select>
+        <Box sx={{ position: "relative" }}>
+          <Box
+            component="select"
+            value={statusFilter}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setStatusFilter(e.target.value); setPage(1); }}
+            sx={{
+              height: 44, px: 2, pr: 5, borderRadius: "8px", border: "1px solid",
+              fontFamily: "var(--font-montserrat)", fontSize: "0.875rem",
+              fontWeight: 500, appearance: "none", cursor: "pointer", outline: "none", minWidth: 180,
+              "[data-joy-color-scheme='light'] &": { bgcolor: "#f8fafc", borderColor: "#e2e8f0", color: "#0f172a" },
+              "[data-joy-color-scheme='dark'] &": { bgcolor: "#26262d", borderColor: "#3a3a44", color: "#fafafa" },
+            }}
+          >
+            {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </Box>
+          <Box sx={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", fontSize: "0.625rem", "[data-joy-color-scheme='light'] &": { color: "#64748b" }, "[data-joy-color-scheme='dark'] &": { color: "#a1a1aa" } }}>▼</Box>
+        </Box>
+        <Box sx={{ position: "relative" }}>
+          <Box
+            component="select"
+            value={typeFilter}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setTypeFilter(e.target.value); setPage(1); }}
+            sx={{
+              height: 44, px: 2, pr: 5, borderRadius: "8px", border: "1px solid",
+              fontFamily: "var(--font-montserrat)", fontSize: "0.875rem",
+              fontWeight: 500, appearance: "none", cursor: "pointer", outline: "none", minWidth: 170,
+              "[data-joy-color-scheme='light'] &": { bgcolor: "#f8fafc", borderColor: "#e2e8f0", color: "#0f172a" },
+              "[data-joy-color-scheme='dark'] &": { bgcolor: "#26262d", borderColor: "#3a3a44", color: "#fafafa" },
+            }}
+          >
+            {TYPE_OPTIONS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+          </Box>
+          <Box sx={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", fontSize: "0.625rem", "[data-joy-color-scheme='light'] &": { color: "#64748b" }, "[data-joy-color-scheme='dark'] &": { color: "#a1a1aa" } }}>▼</Box>
+        </Box>
       </Box>
 
       {/* Table */}

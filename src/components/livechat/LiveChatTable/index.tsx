@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Box, Typography, Input, Select, Option } from "@mui/joy";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Box, Typography, Input, IconButton, Tooltip } from "@mui/joy";
 import {
   RiSearchLine,
   RiTimeLine,
@@ -13,10 +13,12 @@ import {
   RiCheckLine,
   RiCloseLine,
 } from "react-icons/ri";
-import { LIVECHAT_STATUS_CONFIG } from "@/types/livechat.types";
 import LiveChatService from "@/services/liveChatService";
+import { useSnackbarStore } from "@/store/snackbarStore";
+import api from "@/services/api";
 import EmptyState from "@/components/ui/EmptyState";
 import Pagination from "@/components/ui/Pagination";
+import PageHeader from "@/components/ui/PageHeader";
 
 function SkeletonRow() {
   const s = {
@@ -32,7 +34,7 @@ function SkeletonRow() {
   };
   return (
     <tr>
-      {[20, 150, 130, 100, 60, 110, 90, 80, 90].map((w, i) => (
+      {[20, 180, 140, 120, 180, 70, 100].map((w, i) => (
         <td key={i} style={{ padding: "14px 16px" }}>
           <Box sx={{ ...s, width: w, height: 14 }} />
         </td>
@@ -49,30 +51,96 @@ const STATUS_OPTIONS = [
   { value: "completed", label: "Tugallangan" },
 ];
 
+const STATUS_CONFIG: Record<
+  string,
+  {
+    label: string;
+    light: { bg: string; color: string };
+    dark: { bg: string; color: string };
+  }
+> = {
+  pending: {
+    label: "Kutilmoqda",
+    light: { bg: "#fef3c7", color: "#d97706" },
+    dark: { bg: "rgba(251,191,36,0.1)", color: "#fbbf24" },
+  },
+  paid: {
+    label: "To'langan",
+    light: { bg: "#dcfce7", color: "#16a34a" },
+    dark: { bg: "rgba(74,222,128,0.1)", color: "#4ade80" },
+  },
+  cancelled: {
+    label: "Bekor",
+    light: { bg: "#fff1f2", color: "#dc2626" },
+    dark: { bg: "rgba(248,113,113,0.1)", color: "#f87171" },
+  },
+  completed: {
+    label: "Tugallangan",
+    light: { bg: "#e0f2fe", color: "#0284c7" },
+    dark: { bg: "rgba(2,132,199,0.1)", color: "#38bdf8" },
+  },
+};
+
+const nativeSx = {
+  height: 42,
+  px: 1.5,
+  pr: 4,
+  borderRadius: "8px",
+  border: "1px solid",
+  fontFamily: "var(--font-montserrat)",
+  fontSize: "0.875rem",
+  fontWeight: 500,
+  appearance: "none" as const,
+  cursor: "pointer",
+  outline: "none",
+  "[data-joy-color-scheme='light'] &": {
+    bgcolor: "#f8fafc",
+    borderColor: "#e2e8f0",
+    color: "#0f172a",
+  },
+  "[data-joy-color-scheme='dark'] &": {
+    bgcolor: "#26262d",
+    borderColor: "#3a3a44",
+    color: "#fafafa",
+  },
+};
+
 export default function LiveChatTable() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(7);
+  const perPage = 10;
 
   const { data, isLoading } = useQuery({
-    queryKey: ["liveChats"],
+    queryKey: ["liveChatsForms"],
     queryFn: LiveChatService.getAll,
-    select: (res) => (Array.isArray(res.data) ? res.data : []),
+    staleTime: 0,
+    select: (res: any) => (Array.isArray(res.data) ? res.data : []),
   });
 
+  const queryClient = useQueryClient();
   const chats = data ?? [];
+
+  const acceptMutation = useMutation({
+    mutationFn: ({ id, isAccepted }: { id: number; isAccepted: boolean }) =>
+      api.patch(`/live-chat/update/${id}`, { isAccepted }),
+    onSuccess: () => {
+      useSnackbarStore.getState().success("Yangilandi!");
+      queryClient.invalidateQueries({ queryKey: ["liveChatsForms"] });
+    },
+    onError: () => useSnackbarStore.getState().error("Backend hali qo\'llab-quvvatlamaydi"),
+  });
 
   const filtered = useMemo(() => {
     let arr = [...chats];
-    if (statusFilter) arr = arr.filter((c) => c.status === statusFilter);
+    if (statusFilter) arr = arr.filter((c: any) => c.status === statusFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
       arr = arr.filter(
-        (c) =>
+        (c: any) =>
           `${c.firstName} ${c.lastName}`.toLowerCase().includes(q) ||
-          c.phoneNumber.includes(q) ||
-          c.selectedCourseName.toLowerCase().includes(q),
+          (c.phoneNumber ?? "").includes(q) ||
+          (c.selectedCourseName ?? "").toLowerCase().includes(q),
       );
     }
     return arr;
@@ -83,58 +151,34 @@ export default function LiveChatTable() {
     [filtered, page, perPage],
   );
 
-  const formatPrice = (price: string | number) =>
-    Number(price).toLocaleString("uz-UZ") + " so'm";
-
-  const formatDate = (d: string) =>
-    new Date(d).toLocaleDateString("uz-UZ", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-
-  const tdStyle: React.CSSProperties = { padding: "14px 16px" };
+  const tdStyle: React.CSSProperties = { padding: "12px 16px" };
   const cols = [
     "#",
     "Foydalanuvchi",
     "Kurs",
     "Narx",
-    "Davomiylik",
     "Seans",
     "Jins",
-    "Qabul",
     "Status",
   ];
-  const widths = [
-    "48px",
-    "180px",
-    "150px",
-    "130px",
-    "100px",
-    "150px",
-    "70px",
-    "80px",
-    "130px",
-  ];
-
-  const selectSx = {
-    borderRadius: "8px",
-    fontFamily: "var(--font-montserrat)",
-    fontSize: "0.875rem",
-    "[data-joy-color-scheme='light'] &": {
-      bgcolor: "#f8fafc",
-      borderColor: "#e2e8f0",
-    },
-    "[data-joy-color-scheme='dark'] &": {
-      bgcolor: "#26262d",
-      borderColor: "#3a3a44",
-    },
-  };
+  const widths = ["48px", "200px", "160px", "120px", "180px", "70px", "120px"];
 
   return (
     <Box>
-      {/* Filters */}
-      <Box sx={{ display: "flex", gap: 1.5, mb: 2, flexWrap: "wrap" }}>
+      <PageHeader
+        title="Jonli chat so'rovlari"
+        subtitle={`Jami ${chats.length} ta so'rov`}
+      />
+
+      <Box
+        sx={{
+          display: "flex",
+          gap: 1.5,
+          mb: 2,
+          flexWrap: "wrap",
+          alignItems: "center",
+        }}
+      >
         <Input
           value={search}
           onChange={(e) => {
@@ -146,7 +190,7 @@ export default function LiveChatTable() {
           sx={{
             flex: 1,
             minWidth: 200,
-            maxWidth: 320,
+            maxWidth: 300,
             borderRadius: "8px",
             fontFamily: "var(--font-montserrat)",
             fontSize: "0.875rem",
@@ -162,30 +206,39 @@ export default function LiveChatTable() {
             },
           }}
         />
-        <Select
-          value={statusFilter}
-          onChange={(_, v) => {
-            setStatusFilter(v ?? "");
-            setPage(1);
-          }}
-          sx={{ ...selectSx, width: 180 }}
-        >
-          {STATUS_OPTIONS.map((s) => (
-            <Option
-              key={s.value}
-              value={s.value}
-              sx={{
-                fontFamily: "var(--font-montserrat)",
-                fontSize: "0.875rem",
-              }}
-            >
-              {s.label}
-            </Option>
-          ))}
-        </Select>
+        <Box sx={{ position: "relative" }}>
+          <Box
+            component="select"
+            value={statusFilter}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+            sx={{ ...nativeSx, minWidth: 170 }}
+          >
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </Box>
+          <Box
+            sx={{
+              position: "absolute",
+              right: 10,
+              top: "50%",
+              transform: "translateY(-50%)",
+              pointerEvents: "none",
+              fontSize: "0.6rem",
+              "[data-joy-color-scheme='light'] &": { color: "#64748b" },
+              "[data-joy-color-scheme='dark'] &": { color: "#a1a1aa" },
+            }}
+          >
+            ▼
+          </Box>
+        </Box>
       </Box>
 
-      {/* Table */}
       <Box
         sx={{
           borderRadius: "8px",
@@ -201,23 +254,9 @@ export default function LiveChatTable() {
           },
         }}
       >
-        <Box
-          sx={{
-            overflowX: "auto",
-            "&::-webkit-scrollbar": { height: 6 },
-            "&::-webkit-scrollbar-track": { background: "transparent" },
-            "[data-joy-color-scheme='light'] &::-webkit-scrollbar-thumb": {
-              background: "#cbd5e1",
-              borderRadius: "99px",
-            },
-            "[data-joy-color-scheme='dark'] &::-webkit-scrollbar-thumb": {
-              background: "#3a3a44",
-              borderRadius: "99px",
-            },
-          }}
-        >
+        <Box sx={{ overflowX: "auto" }}>
           <table
-            style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}
+            style={{ width: "100%", borderCollapse: "collapse", minWidth: 800 }}
           >
             <thead>
               <tr>
@@ -262,19 +301,18 @@ export default function LiveChatTable() {
                 ))
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={9} style={{ padding: "40px 16px" }}>
+                  <td colSpan={7} style={{ padding: "40px 16px" }}>
                     <EmptyState
-                      title="Live chat seanslar topilmadi"
-                      description="Boshqa filtr bilan qidiring"
+                      title="So'rovlar topilmadi"
+                      description="Hozircha jonli chat so'rovlari yo'q"
                     />
                   </td>
                 </tr>
               ) : (
-                paginated.map((chat, idx) => {
-                  const statusCfg =
-                    LIVECHAT_STATUS_CONFIG[chat.status] ??
-                    LIVECHAT_STATUS_CONFIG.pending;
+                paginated.map((chat: any, idx: number) => {
                   const isMale = chat.gender === "male";
+                  const statusCfg =
+                    STATUS_CONFIG[chat.status] ?? STATUS_CONFIG.pending;
                   return (
                     <tr
                       key={chat.id}
@@ -291,7 +329,6 @@ export default function LiveChatTable() {
                           "transparent";
                       }}
                     >
-                      {/* # */}
                       <td style={tdStyle}>
                         <Typography
                           sx={{
@@ -309,8 +346,6 @@ export default function LiveChatTable() {
                           {(page - 1) * perPage + idx + 1}
                         </Typography>
                       </td>
-
-                      {/* User */}
                       <td style={tdStyle}>
                         <Box
                           sx={{
@@ -341,7 +376,7 @@ export default function LiveChatTable() {
                               },
                             }}
                           >
-                            {chat.firstName?.[0]}
+                            {chat.firstName?.[0] ?? "?"}
                           </Box>
                           <Box sx={{ minWidth: 0 }}>
                             <Typography
@@ -369,8 +404,6 @@ export default function LiveChatTable() {
                           </Box>
                         </Box>
                       </td>
-
-                      {/* Course */}
                       <td style={tdStyle}>
                         <Typography
                           sx={{
@@ -385,8 +418,6 @@ export default function LiveChatTable() {
                           {chat.selectedCourseName}
                         </Typography>
                       </td>
-
-                      {/* Price */}
                       <td style={tdStyle}>
                         <Typography
                           sx={{
@@ -401,11 +432,9 @@ export default function LiveChatTable() {
                             },
                           }}
                         >
-                          {formatPrice(chat.price)}
+                          {Number(chat.price).toLocaleString("uz-UZ")} so'm
                         </Typography>
                       </td>
-
-                      {/* Duration */}
                       <td style={tdStyle}>
                         <Box
                           sx={{
@@ -414,52 +443,7 @@ export default function LiveChatTable() {
                             gap: 0.75,
                           }}
                         >
-                          <Box
-                            sx={{
-                              "[data-joy-color-scheme='light'] &": {
-                                color: "#94a3b8",
-                              },
-                              "[data-joy-color-scheme='dark'] &": {
-                                color: "#52525e",
-                              },
-                            }}
-                          >
-                            <RiTimeLine size={14} />
-                          </Box>
-                          <Typography
-                            sx={{
-                              fontFamily: "var(--font-montserrat)",
-                              fontSize: "0.875rem",
-                              color: "text.secondary",
-                            }}
-                          >
-                            {chat.duration} daq
-                          </Typography>
-                        </Box>
-                      </td>
-
-                      {/* Session */}
-                      <td style={tdStyle}>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 0.75,
-                            mb: 0.25,
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              "[data-joy-color-scheme='light'] &": {
-                                color: "#94a3b8",
-                              },
-                              "[data-joy-color-scheme='dark'] &": {
-                                color: "#52525e",
-                              },
-                            }}
-                          >
-                            <RiCalendarLine size={13} />
-                          </Box>
+                          <RiCalendarLine size={13} style={{ opacity: 0.5 }} />
                           <Typography
                             sx={{
                               fontFamily: "var(--font-montserrat)",
@@ -470,9 +454,26 @@ export default function LiveChatTable() {
                             {chat.selectedDay} {chat.selectedTime}
                           </Typography>
                         </Box>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.75,
+                            mt: 0.25,
+                          }}
+                        >
+                          <RiTimeLine size={13} style={{ opacity: 0.5 }} />
+                          <Typography
+                            sx={{
+                              fontFamily: "var(--font-montserrat)",
+                              fontSize: "0.75rem",
+                              color: "text.tertiary",
+                            }}
+                          >
+                            {chat.duration} daqiqa
+                          </Typography>
+                        </Box>
                       </td>
-
-                      {/* Gender */}
                       <td style={tdStyle}>
                         <Box
                           sx={{
@@ -501,46 +502,14 @@ export default function LiveChatTable() {
                           )}
                         </Box>
                       </td>
-
-                      {/* isAccepted */}
-                      <td style={tdStyle}>
-                        <Box
-                          sx={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: "6px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            "[data-joy-color-scheme='light'] &": {
-                              bgcolor: chat.isAccepted ? "#dcfce7" : "#fff1f2",
-                              color: chat.isAccepted ? "#16a34a" : "#dc2626",
-                            },
-                            "[data-joy-color-scheme='dark'] &": {
-                              bgcolor: chat.isAccepted
-                                ? "rgba(74,222,128,0.1)"
-                                : "rgba(248,113,113,0.08)",
-                              color: chat.isAccepted ? "#4ade80" : "#f87171",
-                            },
-                          }}
-                        >
-                          {chat.isAccepted ? (
-                            <RiCheckLine size={14} />
-                          ) : (
-                            <RiCloseLine size={14} />
-                          )}
-                        </Box>
-                      </td>
-
-                      {/* Status */}
                       <td style={tdStyle}>
                         <Box
                           sx={{
                             display: "inline-flex",
                             alignItems: "center",
                             gap: 0.5,
-                            px: 1.25,
-                            py: 0.375,
+                            px: 1,
+                            py: 0.25,
                             borderRadius: "6px",
                             "[data-joy-color-scheme='light'] &": {
                               bgcolor: statusCfg.light.bg,
@@ -555,7 +524,6 @@ export default function LiveChatTable() {
                               width: 6,
                               height: 6,
                               borderRadius: "50%",
-                              flexShrink: 0,
                               "[data-joy-color-scheme='light'] &": {
                                 bgcolor: statusCfg.light.color,
                               },
@@ -568,7 +536,7 @@ export default function LiveChatTable() {
                             sx={{
                               fontFamily: "var(--font-montserrat)",
                               fontWeight: 600,
-                              fontSize: "0.75rem",
+                              fontSize: "0.6875rem",
                               "[data-joy-color-scheme='light'] &": {
                                 color: statusCfg.light.color,
                               },
@@ -580,6 +548,25 @@ export default function LiveChatTable() {
                             {statusCfg.label}
                           </Typography>
                         </Box>
+                        <Tooltip title={chat.isAccepted ? "Rad etish" : "Qabul qilish"} placement="top" arrow>
+                          <IconButton
+                            size="sm" variant="soft"
+                            onClick={() => acceptMutation.mutate({ id: chat.id, isAccepted: !chat.isAccepted })}
+                            sx={{
+                              borderRadius: "6px", minWidth: 28, minHeight: 28, mt: 0.5,
+                              "[data-joy-color-scheme='light'] &": {
+                                bgcolor: chat.isAccepted ? "#dcfce7" : "#fff1f2",
+                                color: chat.isAccepted ? "#16a34a" : "#dc2626",
+                              },
+                              "[data-joy-color-scheme='dark'] &": {
+                                bgcolor: chat.isAccepted ? "rgba(74,222,128,0.1)" : "rgba(248,113,113,0.08)",
+                                color: chat.isAccepted ? "#4ade80" : "#f87171",
+                              },
+                            }}
+                          >
+                            {chat.isAccepted ? <RiCheckLine size={13} /> : <RiCloseLine size={13} />}
+                          </IconButton>
+                        </Tooltip>
                       </td>
                     </tr>
                   );
@@ -590,18 +577,14 @@ export default function LiveChatTable() {
         </Box>
       </Box>
 
-      {/* Pagination */}
       {!isLoading && filtered.length > 0 && (
         <Pagination
           total={filtered.length}
           page={page}
           perPage={perPage}
           onPageChange={setPage}
-          onPerPageChange={(pp) => {
-            setPerPage(pp);
-            setPage(1);
-          }}
-          perPageOptions={[10, 20, 50]}
+          onPerPageChange={() => {}}
+          perPageOptions={[10]}
         />
       )}
     </Box>

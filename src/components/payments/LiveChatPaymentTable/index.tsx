@@ -13,7 +13,7 @@ import {
   RiTimeLine,
   RiCalendarLine,
 } from "react-icons/ri";
-import PaymentService from "@/services/paymentService";
+import LiveChatService from "@/services/liveChatService";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import Pagination from "@/components/ui/Pagination";
@@ -72,21 +72,24 @@ export default function LiveChatPaymentTable() {
   const [search, setSearch] = useState("");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["livechatPayments", page, perPage],
-    queryFn: () => PaymentService.getLiveChatPayments(perPage, page),
+    queryKey: ["liveChats"],
+    queryFn: LiveChatService.getAll,
+    select: (res: any) => Array.isArray(res.data) ? res.data.filter((c: any) => c.status === "paid") : [],
   });
 
-  const payments = data?.data?.data ?? [];
-  const total = data?.data?.count ?? 0;
+  // Faqat to'langan (paid) livechatlarni ko'rsatamiz
+  const allChats = data ?? [];
+  const payments = allChats.filter((c: any) => c.status === "paid");
+  const total = payments.length;
 
   const filtered = useMemo(() => {
     if (!search.trim()) return payments;
     const q = search.toLowerCase();
     return payments.filter(
       (p) =>
-        p.fullName.toLowerCase().includes(q) ||
-        p.courseName.toLowerCase().includes(q) ||
-        p.userPhoneNumber.includes(q),
+        `${p.firstName} ${p.lastName}`.toLowerCase().includes(q) ||
+        p.selectedCourseName.toLowerCase().includes(q) ||
+        p.phoneNumber.includes(q),
     );
   }, [search, payments]);
 
@@ -100,10 +103,7 @@ export default function LiveChatPaymentTable() {
       year: "numeric",
     });
 
-  const totalAmount = payments.reduce(
-    (sum, p) => sum + Number(p.paymentAmount),
-    0,
-  );
+  const totalAmount = payments.reduce((sum: number, p: any) => sum + Number(p.price), 0);
 
   const tdStyle: React.CSSProperties = { padding: "14px 16px" };
   const cols = [
@@ -313,7 +313,7 @@ export default function LiveChatPaymentTable() {
                               },
                             }}
                           >
-                            {payment.fullName?.[0] ?? "?"}
+                            {payment.firstName?.[0] ?? "?"}
                           </Box>
                           <Box sx={{ minWidth: 0 }}>
                             <Typography
@@ -327,7 +327,7 @@ export default function LiveChatPaymentTable() {
                                 textOverflow: "ellipsis",
                               }}
                             >
-                              {payment.fullName}
+                              {payment.firstName} {payment.lastName}
                             </Typography>
                             <Typography
                               sx={{
@@ -336,7 +336,7 @@ export default function LiveChatPaymentTable() {
                                 color: "text.tertiary",
                               }}
                             >
-                              {payment.userPhoneNumber}
+                              {payment.phoneNumber}
                             </Typography>
                           </Box>
                         </Box>
@@ -378,7 +378,7 @@ export default function LiveChatPaymentTable() {
                               textOverflow: "ellipsis",
                             }}
                           >
-                            {payment.courseName}
+                            {payment.selectedCourseName}
                           </Typography>
                         </Box>
                       </td>
@@ -418,7 +418,7 @@ export default function LiveChatPaymentTable() {
                               },
                             }}
                           >
-                            {formatPrice(payment.paymentAmount)}
+                            {formatPrice(payment.price)}
                           </Typography>
                         </Box>
                       </td>

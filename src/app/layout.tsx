@@ -29,6 +29,7 @@ export default function RootLayout({
   return (
     // ✅ data-joy-color-scheme olib tashlandi — CssVarsProvider o'zi qo'yadi
     <html lang="uz" suppressHydrationWarning>
+
       <body className={montserrat.variable} suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>

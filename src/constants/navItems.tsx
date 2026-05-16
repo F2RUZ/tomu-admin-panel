@@ -4,11 +4,9 @@ import {
   RiDashboardLine,
   RiBookOpenLine,
   RiUserLine,
-  RiExchangeLine,
   RiChat1Line,
   RiNotification3Line,
   RiMoneyDollarCircleLine,
-  RiMessage3Line,
 } from "react-icons/ri";
 import { ROUTES } from "./routes";
 
@@ -55,20 +53,8 @@ export const NAV_GROUPS: NavGroup[] = [
     roles: ["admin", "director"],
     items: [
       {
-        label: "Buyurtmalar",
-        path: ROUTES.ORDERS,
-        icon: <RiExchangeLine size={20} />,
-        roles: ["admin", "director"],
-      },
-      {
-        label: "Kurs to'lovlari",
-        path: ROUTES.PAYMENTS_COURSE,
-        icon: <RiMoneyDollarCircleLine size={20} />,
-        roles: ["admin", "director"],
-      },
-      {
-        label: "Live Chat to'lovlari",
-        path: ROUTES.PAYMENTS_LIVECHAT,
+        label: "Moliya",
+        path: "/finance",
         icon: <RiMoneyDollarCircleLine size={20} />,
         roles: ["admin", "director"],
       },
@@ -78,12 +64,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Xizmatlar",
     roles: ["admin", "director", "teacher"],
     items: [
-      {
-        label: "Jonli chat",
-        path: ROUTES.LIVE_CHAT,
-        icon: <RiMessage3Line size={20} />,
-        roles: ["admin", "director", "teacher"],
-      },
+
       {
         label: "Fikrlar",
         path: ROUTES.FEEDBACKS,

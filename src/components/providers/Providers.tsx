@@ -24,6 +24,13 @@ const queryClient = new QueryClient({
 function AppShell({ children }: { children: React.ReactNode }) {
   const { mode } = useThemeStore();
   const lenisInitialized = useRef(false);
+
+  // ✅ Zustand store dan MUI Joy ga sync
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-joy-color-scheme", mode);
+    }
+  }, [mode]);
   const authInitialized = useRef(false);
 
   // ✅ data-joy-color-scheme ni CssVarsProvider boshqarsin
@@ -93,7 +100,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <CssVarsProvider
         theme={theme}
         defaultMode="dark"
-        modeStorageKey="tomu-admin-theme"
+        modeStorageKey="tomu-admin-color-scheme"
         // ✅ disableNestedContext olib tashlandi — hydration muammo shu edi
         // ✅ disableTransitionOnChange — color scheme o'zgarishida flash yo'q
         disableTransitionOnChange
