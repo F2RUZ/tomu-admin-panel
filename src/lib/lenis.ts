@@ -24,6 +24,7 @@ export const initLenis = async (): Promise<void> => {
       smoothWheel: true,
       wheelMultiplier: 1,
       touchMultiplier: 2,
+      eventsTarget: document.documentElement,
     }) as LenisInstance;
 
     lenisInstance = lenis;
@@ -39,6 +40,21 @@ export const initLenis = async (): Promise<void> => {
   }
 };
 
+// ─── Stop / Start ────────────────────────────────────────────────────────────
+export const stopLenis = (): void => {
+  if (lenisInstance) {
+    (lenisInstance as any).options = {
+      ...(lenisInstance as any).options,
+      smoothWheel: false,
+    };
+    (lenisInstance as any).stop();
+  }
+};
+export const startLenis = (): void => {
+  if (lenisInstance) {
+    (lenisInstance as any).start();
+  }
+};
 // ─── Destroy ─────────────────────────────────────────────────────────────────
 export const destroyLenis = (): void => {
   if (lenisInstance) {

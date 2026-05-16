@@ -1,13 +1,17 @@
-// src/app/(dashboard)/courses/[id]/lessons/page.tsx
 "use client";
 
-import { use, useState } from "react";
+import { useParams } from "next/navigation"; // ✅ use(params) o'rniga
+import { useState } from "react";
 import { Box, Typography, Button, CircularProgress } from "@mui/joy";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { RiAddLine } from "react-icons/ri";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  RiAddLine,
+  RiSaveLine,
+  RiCloseLine,
+  RiStackLine,
+} from "react-icons/ri";
 import BlockService from "@/services/blockService";
 import BlockAccordion from "@/components/courses/sections/Lessons/BlockAccordion";
-import ConfirmModal from "@/components/ui/ConfirmModal";
 import EmptyState from "@/components/ui/EmptyState";
 import { Block } from "@/types/block.types";
 import {
@@ -20,14 +24,9 @@ import {
   FormHelperText,
   Divider,
 } from "@mui/joy";
-import { RiSaveLine, RiCloseLine, RiStackLine } from "react-icons/ri";
 import { useSnackbarStore } from "@/store/snackbarStore";
 
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
-
-// ─── Block Modal (inline) ────────────────────────────────────────────────────
+// ─── Block Modal ──────────────────────────────────────────────────────────────
 function BlockModal({
   open,
   onClose,
@@ -98,7 +97,6 @@ function BlockModal({
       "& input": { color: "#fafafa" },
     },
   };
-
   const labelSx = {
     fontFamily: "var(--font-montserrat)",
     fontWeight: 600,
@@ -279,12 +277,12 @@ function BlockModal({
   );
 }
 
-// ─── Main Page ───────────────────────────────────────────────────────────────
-export default function LessonsPage({ params }: PageProps) {
-  const { id } = use(params);
+// ─── Main Page ────────────────────────────────────────────────────────────────
+export default function LessonsPage() {
+  const params = useParams();
+  const id = params.id as string;
   const courseId = Number(id);
   const queryClient = useQueryClient();
-
   const [blockModalOpen, setBlockModalOpen] = useState(false);
   const [editBlock, setEditBlock] = useState<Block | null>(null);
 
@@ -302,7 +300,6 @@ export default function LessonsPage({ params }: PageProps) {
 
   return (
     <Box>
-      {/* Page header */}
       <Box
         sx={{
           display: "flex",
@@ -364,7 +361,6 @@ export default function LessonsPage({ params }: PageProps) {
         </Button>
       </Box>
 
-      {/* Blocks */}
       {isLoading ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
           <CircularProgress
@@ -400,7 +396,6 @@ export default function LessonsPage({ params }: PageProps) {
         </Box>
       )}
 
-      {/* Block modal */}
       <BlockModal
         open={blockModalOpen}
         onClose={() => {

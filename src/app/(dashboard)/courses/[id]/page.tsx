@@ -1,13 +1,9 @@
-// src/app/(dashboard)/courses/[id]/page.tsx
 "use client";
-import { use } from "react";
+import { useParams } from "next/navigation";
 import CourseInfo from "@/components/courses/CourseInfo";
 
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
-
-export default function CourseDetailPage({ params }: PageProps) {
-  const { id } = use(params);
+export default function CourseDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
   return <CourseInfo courseId={id} />;
 }

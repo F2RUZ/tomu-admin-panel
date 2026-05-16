@@ -1,3 +1,4 @@
+// src/services/authService.ts
 import api from "./api";
 import {
   LoginRequest,
@@ -15,6 +16,7 @@ const AuthService = {
   },
 
   // GET /auth/refresh?refresh_token=...
+  // Backend cookie dan ham o'qiydi, query param ham yuboramiz — ikki kafolat
   refresh: async (refreshToken: string): Promise<RefreshApiResponse> => {
     const res = await api.get<RefreshApiResponse>("/auth/refresh", {
       params: { refresh_token: refreshToken },
@@ -22,7 +24,7 @@ const AuthService = {
     return res.data;
   },
 
-  // POST /auth/current
+  // POST /auth/current — token validatsiya
   getCurrentUser: async (accessToken: string): Promise<AccessApiResponse> => {
     const dto: AccessRequest = { accessToken };
     const res = await api.post<AccessApiResponse>("/auth/current", dto);

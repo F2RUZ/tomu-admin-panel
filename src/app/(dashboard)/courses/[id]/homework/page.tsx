@@ -1,10 +1,15 @@
-// src/app/(dashboard)/courses/[id]/homework/page.tsx
 "use client";
 
-import { use, useState } from "react";
+import { useParams } from "next/navigation";
+import { useState } from "react";
 import { Box, Typography, Button, CircularProgress } from "@mui/joy";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { RiAddLine } from "react-icons/ri";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  RiAddLine,
+  RiSaveLine,
+  RiCloseLine,
+  RiStackLine,
+} from "react-icons/ri";
 import BlockService from "@/services/blockService";
 import HomeworkBlockAccordion from "@/components/courses/sections/Homework/HomeworkBlockAccordion";
 import EmptyState from "@/components/ui/EmptyState";
@@ -19,13 +24,9 @@ import {
   FormHelperText,
   Divider,
 } from "@mui/joy";
-import { RiSaveLine, RiCloseLine, RiStackLine } from "react-icons/ri";
 import { useSnackbarStore } from "@/store/snackbarStore";
 
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
-
+// ─── Homework Block Modal ─────────────────────────────────────────────────────
 function HomeworkBlockModal({
   open,
   onClose,
@@ -276,8 +277,10 @@ function HomeworkBlockModal({
   );
 }
 
-export default function HomeworkPage({ params }: PageProps) {
-  const { id } = use(params);
+// ─── Main Page ────────────────────────────────────────────────────────────────
+export default function HomeworkPage() {
+  const params = useParams();
+  const id = params.id as string;
   const courseId = Number(id);
   const queryClient = useQueryClient();
   const [blockModalOpen, setBlockModalOpen] = useState(false);

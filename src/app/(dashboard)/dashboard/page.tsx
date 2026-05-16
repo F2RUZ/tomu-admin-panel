@@ -7,14 +7,10 @@ import StatGrid from "@/components/dashboard/StatGrid";
 import RevenueChart from "@/components/dashboard/RevenueChart";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import AnalyticsService from "@/services/analyticsService";
-import { useThemeStore } from "@/store/themeStore";
 
 const currentYear = new Date().getFullYear();
 
 export default function DashboardPage() {
-  const { mode } = useThemeStore();
-  const isDark = mode === "dark";
-
   const { data: analytics, isLoading } = useQuery({
     queryKey: ["analytics", currentYear],
     queryFn: () => AnalyticsService.getByYear(currentYear),
@@ -58,11 +54,8 @@ export default function DashboardPage() {
           gap: 3,
         }}
       >
-        <RevenueChart
-          data={analytics ?? null}
-          loading={isLoading}
-          isDark={isDark}
-        />
+        {/* ✅ isDark prop yo'q — RevenueChart ichida useColorScheme ishlatadi */}
+        <RevenueChart data={analytics ?? null} loading={isLoading} />
         <RecentActivity />
       </Box>
     </Box>

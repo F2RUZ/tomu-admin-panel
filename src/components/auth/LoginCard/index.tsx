@@ -173,7 +173,7 @@ export default function LoginCard() {
             lineHeight: 1.6,
           }}
         >
-          Faqat admin va direktor hisoblar kirishi mumkin
+          "Faqat admin, direktor va o'qituvchi hisoblar kirishi mumkin"
         </Typography>
       </Box>
     </Box>

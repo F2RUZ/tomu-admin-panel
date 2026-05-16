@@ -241,3 +241,18 @@ body {
 [data-joy-color-scheme="dark"] ::-webkit-scrollbar-thumb:hover {
   background: #52525e;
 }
+
+/* src/app/globals.css ga qo'shing */
+body:has([data-quiz-modal="open"]) {
+  overflow: hidden;
+}
+
+/* Lenis scroll lock modal uchun */
+html.lenis-stopped {
+}
+html.lenis-stopped body {
+}
+/* Modal ichida scroll ishlashi uchun */
+[data-lenis-prevent] {
+  overscroll-behavior: contain;
+}

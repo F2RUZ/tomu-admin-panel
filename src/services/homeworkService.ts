@@ -9,7 +9,7 @@ import {
 } from "@/types/homework.types";
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://tomubackend.tomu.uz/api";
+  process.env.NEXT_PUBLIC_API_URL || "http://213.136.64.206:7777/api";
 
 const uploadApi = axios.create({
   baseURL: BASE_URL,

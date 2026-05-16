@@ -1,14 +1,9 @@
-// src/app/(dashboard)/courses/[id]/tariffs/page.tsx
 "use client";
-
-import { use } from "react";
+import { useParams } from "next/navigation";
 import TariffTable from "@/components/courses/sections/Tariffs/TariffTable";
 
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
-
-export default function TariffsPage({ params }: PageProps) {
-  const { id } = use(params);
+export default function TariffsPage() {
+  const params = useParams();
+  const id = params.id as string;
   return <TariffTable courseId={Number(id)} />;
 }

@@ -33,6 +33,7 @@ import {
 import CourseService from "@/services/courseService";
 import { useSnackbarStore } from "@/store/snackbarStore";
 import { gsap } from "@/lib/gsap";
+import { getImageUrl } from "@/utils/url";
 
 interface CourseModalProps {
   open: boolean;
@@ -46,8 +47,6 @@ interface FormErrors {
   description?: string;
   image?: string;
 }
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ?? "";
 
 export default function CourseModal({
   open,
@@ -69,7 +68,6 @@ export default function CourseModal({
 
   useEffect(() => {
     if (!open) return;
-
     if (editData) {
       setTitle(editData.title ?? "");
       setDescription(editData.description ?? "");
@@ -77,15 +75,8 @@ export default function CourseModal({
       setLang(editData.lang ?? "ar");
       setIsActive(editData.isActive ?? true);
       setImageFile(null);
-
-      if (editData.imageUrl) {
-        const imgUrl = editData.imageUrl.startsWith("http")
-          ? editData.imageUrl
-          : `${BASE_URL}/${editData.imageUrl}`;
-        setImagePreview(imgUrl);
-      } else {
-        setImagePreview(null);
-      }
+      // ✅ getImageUrl — URL ni to'g'ri formatga keltiramiz
+      setImagePreview(getImageUrl(editData.imageUrl));
     } else {
       setTitle("");
       setDescription("");
@@ -95,9 +86,7 @@ export default function CourseModal({
       setImageFile(null);
       setImagePreview(null);
     }
-
     setErrors({});
-
     setTimeout(() => {
       if (dialogRef.current) {
         gsap.fromTo(
@@ -272,7 +261,7 @@ export default function CourseModal({
           onSubmit={handleSubmit}
           sx={{ p: 3, display: "flex", flexDirection: "column", gap: 2.5 }}
         >
-          {/* Image */}
+          {/* Image upload */}
           <FormControl error={!!errors.image}>
             <FormLabel sx={labelSx}>
               Kurs rasmi {isEdit && "(ixtiyoriy)"}
@@ -440,7 +429,7 @@ export default function CourseModal({
             />
           </FormControl>
 
-          {/* Lang — faqat edit da */}
+          {/* Lang */}
           {isEdit && (
             <FormControl>
               <FormLabel sx={labelSx}>Til</FormLabel>
@@ -474,14 +463,14 @@ export default function CourseModal({
               >
                 {LANG_OPTIONS.map((l) => (
                   <option key={l.value} value={l.value}>
-                    {l.label}
+                    {l.flag} {l.label}
                   </option>
                 ))}
               </Box>
             </FormControl>
           )}
 
-          {/* isActive — faqat edit da */}
+          {/* isActive */}
           {isEdit && (
             <Box
               sx={{

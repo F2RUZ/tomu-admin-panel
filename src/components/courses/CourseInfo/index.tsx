@@ -1,7 +1,8 @@
+// src/components/courses/CourseInfo/index.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Box, Typography, CircularProgress, Switch, Chip } from "@mui/joy";
+import { Box, Typography, CircularProgress } from "@mui/joy";
 import {
   RiBookOpenLine,
   RiVideoLine,
@@ -17,8 +18,7 @@ import CourseModal from "@/components/courses/CourseModal";
 import StatusBadge from "@/components/ui/StatusBadge";
 import { formatDate } from "@/utils/format";
 import { Button } from "@mui/joy";
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ?? "";
+import { getImageUrl } from "@/utils/url";
 
 interface CourseInfoProps {
   courseId: string;
@@ -60,12 +60,8 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
 
   if (!course) return null;
 
-  const imageUrl = course.imageUrl
-    ? course.imageUrl.startsWith("http")
-      ? course.imageUrl
-      : `${BASE_URL}/${course.imageUrl}`
-    : null;
-
+  // ✅ getImageUrl — URL ni to'g'ri formatga keltiramiz
+  const imageUrl = getImageUrl(course.imageUrl);
   const langOption = LANG_OPTIONS.find((l) => l.value === course.lang);
 
   const stats = [
@@ -125,7 +121,6 @@ export default function CourseInfo({ courseId }: CourseInfoProps) {
             Yaratilgan: {formatDate(course.createdAt)}
           </Typography>
         </Box>
-
         <Button
           onClick={() => setModalOpen(true)}
           startDecorator={<RiEditLine size={16} />}

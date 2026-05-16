@@ -139,42 +139,7 @@ export default function Header() {
           {mode === "dark" ? <RiSunLine size={18} /> : <RiMoonLine size={18} />}
         </IconButton>
 
-        {/* Notification */}
-        <Badge
-          badgeContent={3}
-          size="sm"
-          sx={{
-            "& .MuiBadge-badge": {
-              fontSize: "0.625rem",
-              minWidth: 16,
-              height: 16,
-              "[data-joy-color-scheme='light'] &": { bgcolor: "#0284c7" },
-              "[data-joy-color-scheme='dark'] &": { bgcolor: "#9333ea" },
-            },
-          }}
-        >
-          <IconButton
-            size="sm"
-            variant="plain"
-            color="neutral"
-            onClick={() => router.push(ROUTES.NOTIFICATIONS)}
-            sx={{
-              borderRadius: "10px",
-              width: 36,
-              height: 36,
-              "[data-joy-color-scheme='light'] &": {
-                color: "#64748b",
-                "&:hover": { bgcolor: "#f1f5f9" },
-              },
-              "[data-joy-color-scheme='dark'] &": {
-                color: "#71717d",
-                "&:hover": { bgcolor: "rgba(255,255,255,0.06)" },
-              },
-            }}
-          >
-            <RiBellLine size={18} />
-          </IconButton>
-        </Badge>
+   
 
         {/* User avatar + dropdown */}
         <Box sx={{ position: "relative" }}>
@@ -247,94 +212,7 @@ export default function Header() {
             </Box>
           </Box>
 
-          {/* Dropdown */}
-          {dropdownOpen && (
-            <Box
-              ref={dropdownRef}
-              sx={{
-                position: "absolute",
-                top: "calc(100% + 8px)",
-                right: 0,
-                minWidth: 180,
-                borderRadius: "12px",
-                border: "1px solid",
-                borderColor: "divider",
-                overflow: "hidden",
-                zIndex: 200,
-                boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-                "[data-joy-color-scheme='light'] &": { bgcolor: "#ffffff" },
-                "[data-joy-color-scheme='dark'] &": { bgcolor: "#1c1c21" },
-              }}
-            >
-              {[
-                {
-                  icon: <RiUser3Line size={16} />,
-                  label: "Profil",
-                  onClick: () => {
-                    router.push(ROUTES.SETTINGS);
-                    setDropdownOpen(false);
-                  },
-                },
-                {
-                  icon: <RiSettings4Line size={16} />,
-                  label: "Sozlamalar",
-                  onClick: () => {
-                    router.push(ROUTES.SETTINGS);
-                    setDropdownOpen(false);
-                  },
-                },
-                {
-                  icon: <RiLogoutBoxLine size={16} />,
-                  label: "Chiqish",
-                  onClick: handleLogout,
-                  danger: true,
-                },
-              ].map((item) => (
-                <Box
-                  key={item.label}
-                  onClick={item.onClick}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1.5,
-                    px: 2,
-                    py: 1.25,
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                    "&:hover": {
-                      "[data-joy-color-scheme='light'] &": {
-                        bgcolor: item.danger ? "#fff1f2" : "#f8fafc",
-                      },
-                      "[data-joy-color-scheme='dark'] &": {
-                        bgcolor: item.danger
-                          ? "rgba(248,113,113,0.08)"
-                          : "rgba(255,255,255,0.04)",
-                      },
-                    },
-                  }}
-                >
-                  <Box
-                    sx={{
-                      color: item.danger ? "#ef4444" : "text.secondary",
-                    }}
-                  >
-                    {item.icon}
-                  </Box>
-                  <Typography
-                    level="body-sm"
-                    sx={{
-                      fontFamily: "var(--font-montserrat)",
-                      fontSize: "0.8125rem",
-                      fontWeight: 500,
-                      color: item.danger ? "#ef4444" : "text.primary",
-                    }}
-                  >
-                    {item.label}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-          )}
+      
         </Box>
       </Box>
     </Box>

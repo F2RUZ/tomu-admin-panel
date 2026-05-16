@@ -33,6 +33,7 @@ import {
 import HomeworkService from "@/services/homeworkService";
 import { useSnackbarStore } from "@/store/snackbarStore";
 import { gsap } from "@/lib/gsap";
+import { stopLenis, startLenis } from "@/lib/lenis";
 
 interface HomeworkModalProps {
   open: boolean;
@@ -63,6 +64,19 @@ export default function HomeworkModal({
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const isEdit = !!editData;
+
+
+  // Lenis scroll lock
+  useEffect(() => {
+    if (open) {
+      document.documentElement.classList.add("lenis-stopped");
+    } else {
+      document.documentElement.classList.remove("lenis-stopped");
+    }
+    return () => {
+      document.documentElement.classList.remove("lenis-stopped");
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -190,7 +204,9 @@ export default function HomeworkModal({
         sx={{
           width: { xs: "95vw", sm: 480 },
           maxHeight: "92vh",
-          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
           borderRadius: "8px",
           border: "1px solid",
           p: 0,
@@ -256,64 +272,111 @@ export default function HomeworkModal({
           )}
         </Box>
 
-        {/* Progress */}
-        {loading && uploadProgress > 0 && (
-          <Box sx={{ px: 3, pt: 2.5 }}>
-            <Box
-              sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
-            >
+        {/* ── Progress bar — header ostida ── */}
+        {loading && (
+          <Box
+            sx={{
+              flexShrink: 0,
+              px: 3,
+              py: 1.5,
+              borderBottom: "1px solid",
+              "[data-joy-color-scheme='light'] &": {
+                bgcolor: "#f0f9ff",
+                borderColor: "#e2e8f0",
+              },
+              "[data-joy-color-scheme='dark'] &": {
+                bgcolor: "#0f172a",
+                borderColor: "#3a3a44",
+              },
+            }}
+          >
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
               <Typography
                 sx={{
                   fontFamily: "var(--font-montserrat)",
                   fontSize: "0.8125rem",
                   fontWeight: 600,
-                  color: "text.primary",
+                  "[data-joy-color-scheme='light'] &": { color: "#0284c7" },
+                  "[data-joy-color-scheme='dark'] &": { color: "#c084fc" },
                 }}
               >
-                {uploadProgress < 100
-                  ? "Video yuklanmoqda..."
-                  : "Vimeoga yuborildi ✓"}
+                {uploadProgress < 85
+                  ? "Serverga yuklanmoqda..."
+                  : uploadProgress < 100
+                    ? "Vimeo da qayta ishlanmoqda..."
+                    : "Yuklash tugadi ✓"}
               </Typography>
               <Typography
                 sx={{
                   fontFamily: "var(--font-montserrat)",
                   fontSize: "0.8125rem",
-                  fontWeight: 700,
-                  "[data-joy-color-scheme='light'] &": { color: "#d97706" },
-                  "[data-joy-color-scheme='dark'] &": { color: "#fbbf24" },
+                  fontWeight: 800,
+                  "[data-joy-color-scheme='light'] &": { color: "#0284c7" },
+                  "[data-joy-color-scheme='dark'] &": { color: "#c084fc" },
                 }}
               >
                 {uploadProgress}%
               </Typography>
             </Box>
-            <LinearProgress
-              determinate
-              value={uploadProgress}
+            {/* Progress track */}
+            <Box
               sx={{
+                position: "relative",
+                height: 8,
                 borderRadius: "99px",
-                height: 6,
-                "[data-joy-color-scheme='light'] &": {
-                  bgcolor: "#fef3c7",
-                  "& .MuiLinearProgress-bar": { bgcolor: "#d97706" },
-                },
-                "[data-joy-color-scheme='dark'] &": {
-                  bgcolor: "#26262d",
-                  "& .MuiLinearProgress-bar": { bgcolor: "#f59e0b" },
-                },
+                overflow: "hidden",
+                "[data-joy-color-scheme='light'] &": { bgcolor: "#e2e8f0" },
+                "[data-joy-color-scheme='dark'] &": { bgcolor: "#3a3a44" },
               }}
-            />
-            {uploadProgress === 100 && (
-              <Typography
+            >
+              <Box
                 sx={{
-                  fontFamily: "var(--font-montserrat)",
-                  fontSize: "0.75rem",
-                  color: "text.tertiary",
-                  mt: 0.75,
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  height: "100%",
+                  width: `${uploadProgress}%`,
+                  borderRadius: "99px",
+                  transition: "width 0.4s ease",
+                  background:
+                    uploadProgress === 100
+                      ? "linear-gradient(90deg, #22c55e, #4ade80)"
+                      : uploadProgress >= 85
+                        ? "linear-gradient(90deg, #f59e0b, #fbbf24)"
+                        : "linear-gradient(90deg, #0284c7, #38bdf8)",
+                  "[data-joy-color-scheme='dark'] &": {
+                    background:
+                      uploadProgress === 100
+                        ? "linear-gradient(90deg, #22c55e, #4ade80)"
+                        : uploadProgress >= 85
+                          ? "linear-gradient(90deg, #f59e0b, #fbbf24)"
+                          : "linear-gradient(90deg, #9333ea, #c084fc)",
+                  },
                 }}
-              >
-                Vimeo da qayta ishlanmoqda...
-              </Typography>
-            )}
+              />
+            </Box>
+            {/* Stages */}
+            <Box sx={{ display: "flex", gap: 2, mt: 1 }}>
+              {[
+                { label: "Yuklash", done: uploadProgress >= 85, active: uploadProgress < 85 && uploadProgress > 0 },
+                { label: "Vimeo", done: uploadProgress === 100, active: uploadProgress >= 85 && uploadProgress < 100 },
+                { label: "Tayyor", done: uploadProgress === 100, active: false },
+              ].map((step) => (
+                <Box key={step.label} sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                  <Box sx={{
+                    width: 6, height: 6, borderRadius: "50%",
+                    bgcolor: step.done ? "#22c55e" : step.active ? "#f59e0b" : "text.tertiary",
+                    transition: "background 0.3s ease",
+                  }} />
+                  <Typography sx={{
+                    fontFamily: "var(--font-montserrat)", fontSize: "0.6875rem", fontWeight: 500,
+                    color: step.done ? "#22c55e" : step.active ? "#f59e0b" : "text.tertiary",
+                  }}>
+                    {step.label}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
           </Box>
         )}
 
@@ -321,7 +384,8 @@ export default function HomeworkModal({
         <Box
           component="form"
           onSubmit={handleSubmit}
-          sx={{ p: 3, display: "flex", flexDirection: "column", gap: 2 }}
+          data-lenis-prevent
+          sx={{ p: 3, display: "flex", flexDirection: "column", gap: 2, overflowY: "auto", flex: 1, minHeight: 0 }}
         >
           {/* Description */}
           <FormControl error={!!errors.title}>
@@ -458,7 +522,7 @@ export default function HomeworkModal({
                   textAlign: "center",
                 }}
               >
-                {videoFile ? videoFile.name : "Video faylni tanlang"}
+                {videoFile ? (videoFile.name.length > 30 ? videoFile.name.slice(0, 30) + "..." : videoFile.name) : "Video faylni tanlang"}
               </Typography>
               {videoFile ? (
                 <Typography

@@ -13,6 +13,7 @@ import {
   RiArrowLeftLine,
   RiMenuFoldLine,
   RiMenuUnfoldLine,
+  RiQuestionLine,
 } from "react-icons/ri";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -56,10 +57,15 @@ const getNavItems = (courseId: string) => [
     icon: <RiPriceTagLine size={18} />,
   },
   {
-    label: "Guruhlar",
-    path: `/courses/${courseId}/groups`,
-    icon: <RiGroupLine size={18} />,
+    label: "Quiz",
+    path: `/courses/${courseId}/quiz`,
+    icon: <RiQuestionLine size={18} />,
   },
+  // {
+  //   label: "Guruhlar",
+  //   path: `/courses/${courseId}/groups`,
+  //   icon: <RiGroupLine size={18} />,
+  // },
 ];
 
 export default function CourseDetailSidebar({

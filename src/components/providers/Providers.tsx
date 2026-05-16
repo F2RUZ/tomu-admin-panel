@@ -1,4 +1,3 @@
-// src/components/providers/Providers.tsx
 "use client";
 
 import { CssVarsProvider } from "@mui/joy/styles";
@@ -16,7 +15,7 @@ import Cookies from "js-cookie";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,  // 5 daqiqa
+      staleTime: 1000 * 60 * 5,
       retry: 1,
     },
   },
@@ -27,9 +26,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
   const lenisInitialized = useRef(false);
   const authInitialized = useRef(false);
 
-  useEffect(() => {
-    document.documentElement.setAttribute("data-joy-color-scheme", mode);
-  }, [mode]);
+  // ✅ data-joy-color-scheme ni CssVarsProvider boshqarsin
+  // Bu useEffect olib tashlandi — CssVarsProvider o'zi boshqaradi
 
   useEffect(() => {
     if (lenisInitialized.current) return;
@@ -39,7 +37,9 @@ function AppShell({ children }: { children: React.ReactNode }) {
       initLenis();
       cleanup = destroyLenis;
     });
-    return () => { cleanup?.(); };
+    return () => {
+      cleanup?.();
+    };
   }, []);
 
   useEffect(() => {
@@ -68,7 +68,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
             {
               accessToken: token,
               refreshToken: store.tokens?.refreshToken ?? "",
-            }
+            },
           );
         })
         .catch(() => {
@@ -82,7 +82,6 @@ function AppShell({ children }: { children: React.ReactNode }) {
     <>
       {children}
       <CustomSnackbar />
-      {/* React Query Devtools - faqat development da */}
       <ReactQueryDevtools initialIsOpen={false} />
     </>
   );
@@ -95,7 +94,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         theme={theme}
         defaultMode="dark"
         modeStorageKey="tomu-admin-theme"
-        disableNestedContext
+        // ✅ disableNestedContext olib tashlandi — hydration muammo shu edi
+        // ✅ disableTransitionOnChange — color scheme o'zgarishida flash yo'q
+        disableTransitionOnChange
       >
         <CssBaseline />
         <AppShell>{children}</AppShell>

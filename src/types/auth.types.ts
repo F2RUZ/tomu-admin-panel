@@ -9,7 +9,6 @@ export interface LoginTokens {
   refresh_token: string;
 }
 
-// Backend response ga to'liq mos
 export interface LoginUser {
   id: number;
   firstName: string;
@@ -19,7 +18,7 @@ export interface LoginUser {
   avatar?: string | null;
   role: "director" | "admin" | "teacher" | "student";
   createdAt: string;
-  lastUpdatedAt: string; // ← backend shu nomda qaytaradi
+  lastUpdatedAt: string; // ✅ BaseEntity da lastUpdatedAt — to'g'ri
 }
 
 export interface LoginResponseData {

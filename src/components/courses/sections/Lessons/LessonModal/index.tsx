@@ -15,7 +15,6 @@ import {
   FormHelperText,
   CircularProgress,
   Divider,
-  LinearProgress,
 } from "@mui/joy";
 import {
   RiUploadCloud2Line,
@@ -29,6 +28,7 @@ import { Lesson, CreateLessonDto, UpdateLessonDto } from "@/types/lesson.types";
 import LessonService from "@/services/lessonService";
 import { useSnackbarStore } from "@/store/snackbarStore";
 import { gsap } from "@/lib/gsap";
+import { stopLenis, startLenis } from "@/lib/lenis";
 
 interface LessonModalProps {
   open: boolean;
@@ -44,6 +44,31 @@ interface FormErrors {
   video?: string;
 }
 
+// ─── Progress stages ──────────────────────────────────────────────────────────
+type UploadStage =
+  | "idle" // hech narsa yo'q
+  | "uploading" // serverga yuklanmoqda (0–85%)
+  | "processing" // server qayta ishlamoqda (85–99%)
+  | "done"; // 100% tugadi
+
+function getStageLabel(stage: UploadStage, percent: number): string {
+  switch (stage) {
+    case "uploading":
+      return `Serverga yuklanmoqda... ${percent}%`;
+    case "processing":
+      return "Vimeo da qayta ishlanmoqda...";
+    case "done":
+      return "Yuklash tugadi ✓";
+    default:
+      return "";
+  }
+}
+
+function getStageColor(stage: UploadStage): string {
+  if (stage === "done") return "#22c55e";
+  return "inherit";
+}
+
 export default function LessonModal({
   open,
   onClose,
@@ -53,13 +78,28 @@ export default function LessonModal({
 }: LessonModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadPercent, setUploadPercent] = useState(0);
+  const [uploadStage, setUploadStage] = useState<UploadStage>("idle");
   const [title, setTitle] = useState("");
   const [order, setOrder] = useState("");
   const [grammarLink, setGrammarLink] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const isEdit = !!editData;
+
+  // ── Reset on open ──────────────────────────────────────────────────────────
+
+  // Lenis scroll lock
+  useEffect(() => {
+    if (open) {
+      document.documentElement.classList.add("lenis-stopped");
+    } else {
+      document.documentElement.classList.remove("lenis-stopped");
+    }
+    return () => {
+      document.documentElement.classList.remove("lenis-stopped");
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -75,7 +115,9 @@ export default function LessonModal({
       setVideoFile(null);
     }
     setErrors({});
-    setUploadProgress(0);
+    setUploadPercent(0);
+    setUploadStage("idle");
+
     setTimeout(() => {
       if (dialogRef.current) {
         gsap.fromTo(
@@ -87,6 +129,7 @@ export default function LessonModal({
     }, 10);
   }, [open, editData]);
 
+  // ── Validate ───────────────────────────────────────────────────────────────
   const validate = (): FormErrors => {
     const errs: FormErrors = {};
     if (!title.trim()) errs.title = "Sarlavha kiritilishi shart";
@@ -97,6 +140,7 @@ export default function LessonModal({
     return errs;
   };
 
+  // ── File change ────────────────────────────────────────────────────────────
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -108,6 +152,19 @@ export default function LessonModal({
     setErrors((p) => ({ ...p, video: undefined }));
   };
 
+  // ── Progress handler ───────────────────────────────────────────────────────
+  const handleProgress = (percent: number) => {
+    setUploadPercent(percent);
+    if (percent < 85) {
+      setUploadStage("uploading");
+    } else if (percent < 100) {
+      setUploadStage("processing");
+    } else {
+      setUploadStage("done");
+    }
+  };
+
+  // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate();
@@ -115,8 +172,11 @@ export default function LessonModal({
       setErrors(errs);
       return;
     }
+
     setLoading(true);
-    setUploadProgress(0);
+    setUploadPercent(0);
+    setUploadStage(videoFile ? "uploading" : "idle");
+
     try {
       if (isEdit && editData) {
         const dto: UpdateLessonDto = {
@@ -126,7 +186,11 @@ export default function LessonModal({
           grammarLink: grammarLink || undefined,
           ...(videoFile && { video: videoFile }),
         };
-        await LessonService.update(editData.id, dto, setUploadProgress);
+        await LessonService.update(
+          editData.id,
+          dto,
+          videoFile ? handleProgress : undefined,
+        );
         useSnackbarStore.getState().success("Dars yangilandi!");
       } else {
         const dto: CreateLessonDto = {
@@ -136,22 +200,33 @@ export default function LessonModal({
           video: videoFile!,
           grammarLink: grammarLink || undefined,
         };
-        await LessonService.create(dto, setUploadProgress);
+        await LessonService.create(dto, handleProgress);
         useSnackbarStore
           .getState()
           .success("Dars yaratildi! Vimeo da tayyorlanmoqda...");
       }
+
+      // ✅ Done — 100% ko'rsatamiz, keyin yopamiz
+      setUploadPercent(100);
+      setUploadStage("done");
+      await new Promise((r) => setTimeout(r, 600)); // 0.6s done ko'rsatish
+
       onSuccess();
       onClose();
-    } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Xatolik yuz berdi";
+    } catch (err: unknown) {
+      const axiosErr = err as {
+        response?: { data?: { message?: string } };
+      };
+      const msg = axiosErr?.response?.data?.message ?? "Xatolik yuz berdi";
       useSnackbarStore.getState().error(msg);
+      setUploadStage("idle");
+      setUploadPercent(0);
     } finally {
       setLoading(false);
-      setUploadProgress(0);
     }
   };
 
+  // ── Styles ─────────────────────────────────────────────────────────────────
   const inputSx = {
     fontFamily: "var(--font-montserrat)",
     fontWeight: 500,
@@ -184,6 +259,9 @@ export default function LessonModal({
     color: "#ef4444",
   };
 
+  const hasVideo = !!videoFile;
+  const showProgress = loading && hasVideo && uploadStage !== "idle";
+
   return (
     <Modal open={open} onClose={loading ? undefined : onClose}>
       <ModalDialog
@@ -192,7 +270,7 @@ export default function LessonModal({
           width: { xs: "95vw", sm: 500 },
           maxHeight: "92vh",
           overflowY: "auto",
-          borderRadius: "8px",
+          borderRadius: "12px",
           border: "1px solid",
           p: 0,
           "[data-joy-color-scheme='light'] &": {
@@ -207,7 +285,7 @@ export default function LessonModal({
           },
         }}
       >
-        {/* Header */}
+        {/* ── Header ──────────────────────────────────────── */}
         <Box
           sx={{
             display: "flex",
@@ -257,68 +335,177 @@ export default function LessonModal({
           )}
         </Box>
 
-        {/* Progress */}
-        {loading && uploadProgress > 0 && (
-          <Box sx={{ px: 3, pt: 2.5 }}>
+        {/* ── Progress bar ─────────────────────────────────── */}
+        {showProgress && (
+          <Box
+            sx={{
+              px: 3,
+              py: 2,
+              borderBottom: "1px solid",
+              "[data-joy-color-scheme='light'] &": {
+                bgcolor: "#f8fafc",
+                borderColor: "#e2e8f0",
+              },
+              "[data-joy-color-scheme='dark'] &": {
+                bgcolor: "#26262d",
+                borderColor: "#3a3a44",
+              },
+            }}
+          >
+            {/* Label row */}
             <Box
-              sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 1.25,
+              }}
             >
               <Typography
                 sx={{
                   fontFamily: "var(--font-montserrat)",
                   fontSize: "0.8125rem",
                   fontWeight: 600,
-                  color: "text.primary",
+                  color: uploadStage === "done" ? "#22c55e" : "text.primary",
+                  transition: "color 0.3s ease",
                 }}
               >
-                {uploadProgress < 100
-                  ? "Video yuklanmoqda..."
-                  : "Vimeoga yuborildi ✓"}
+                {getStageLabel(uploadStage, uploadPercent)}
               </Typography>
               <Typography
                 sx={{
                   fontFamily: "var(--font-montserrat)",
                   fontSize: "0.8125rem",
                   fontWeight: 700,
-                  "[data-joy-color-scheme='light'] &": { color: "#0284c7" },
-                  "[data-joy-color-scheme='dark'] &": { color: "#c084fc" },
+                  minWidth: 36,
+                  textAlign: "right",
+                  "[data-joy-color-scheme='light'] &": {
+                    color: uploadStage === "done" ? "#22c55e" : "#0284c7",
+                  },
+                  "[data-joy-color-scheme='dark'] &": {
+                    color: uploadStage === "done" ? "#4ade80" : "#c084fc",
+                  },
+                  transition: "color 0.3s ease",
                 }}
               >
-                {uploadProgress}%
+                {uploadPercent}%
               </Typography>
             </Box>
-            <LinearProgress
-              determinate
-              value={uploadProgress}
+
+            {/* Progress track */}
+            <Box
               sx={{
+                position: "relative",
+                height: 8,
                 borderRadius: "99px",
-                height: 6,
-                "[data-joy-color-scheme='light'] &": {
-                  bgcolor: "#e0f2fe",
-                  "& .MuiLinearProgress-bar": { bgcolor: "#0284c7" },
-                },
-                "[data-joy-color-scheme='dark'] &": {
-                  bgcolor: "#26262d",
-                  "& .MuiLinearProgress-bar": { bgcolor: "#9333ea" },
-                },
+                overflow: "hidden",
+                "[data-joy-color-scheme='light'] &": { bgcolor: "#e2e8f0" },
+                "[data-joy-color-scheme='dark'] &": { bgcolor: "#3a3a44" },
               }}
-            />
-            {uploadProgress === 100 && (
-              <Typography
+            >
+              {/* Fill bar */}
+              <Box
                 sx={{
-                  fontFamily: "var(--font-montserrat)",
-                  fontSize: "0.75rem",
-                  color: "text.tertiary",
-                  mt: 0.75,
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  height: "100%",
+                  width: `${uploadPercent}%`,
+                  borderRadius: "99px",
+                  transition: "width 0.4s ease, background 0.3s ease",
+                  background:
+                    uploadStage === "done"
+                      ? "linear-gradient(90deg, #22c55e, #4ade80)"
+                      : uploadStage === "processing"
+                        ? "linear-gradient(90deg, #f59e0b, #fbbf24)"
+                        : "[data-joy-color-scheme='light'] ? linear-gradient(90deg, #0284c7, #38bdf8) : linear-gradient(90deg, #9333ea, #c084fc)",
                 }}
-              >
-                Vimeo da qayta ishlanmoqda...
-              </Typography>
-            )}
+              />
+              {/* Processing shimmer */}
+              {uploadStage === "processing" && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 0,
+                    left: "-100%",
+                    width: "100%",
+                    height: "100%",
+                    background:
+                      "linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)",
+                    "@keyframes shimmer": {
+                      "0%": { left: "-100%" },
+                      "100%": { left: "100%" },
+                    },
+                    animation: "shimmer 1.5s ease-in-out infinite",
+                  }}
+                />
+              )}
+            </Box>
+
+            {/* Stage info */}
+            <Box
+              sx={{
+                display: "flex",
+                gap: 2,
+                mt: 1.25,
+              }}
+            >
+              {[
+                {
+                  label: "Yuklash",
+                  done: uploadPercent >= 85,
+                  active: uploadStage === "uploading",
+                },
+                {
+                  label: "Vimeo",
+                  done: uploadStage === "done",
+                  active: uploadStage === "processing",
+                },
+                {
+                  label: "Tayyor",
+                  done: uploadStage === "done",
+                  active: false,
+                },
+              ].map((step) => (
+                <Box
+                  key={step.label}
+                  sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                >
+                  <Box
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      transition: "background 0.3s ease",
+                      bgcolor: step.done
+                        ? "#22c55e"
+                        : step.active
+                          ? "#f59e0b"
+                          : "text.tertiary",
+                    }}
+                  />
+                  <Typography
+                    sx={{
+                      fontFamily: "var(--font-montserrat)",
+                      fontSize: "0.6875rem",
+                      fontWeight: 500,
+                      color: step.done
+                        ? "#22c55e"
+                        : step.active
+                          ? "#f59e0b"
+                          : "text.tertiary",
+                      transition: "color 0.3s ease",
+                    }}
+                  >
+                    {step.label}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
           </Box>
         )}
 
-        {/* Form */}
+        {/* ── Form ─────────────────────────────────────────── */}
         <Box
           component="form"
           onSubmit={handleSubmit}
@@ -431,6 +618,7 @@ export default function LessonModal({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  transition: "all 0.2s ease",
                   "[data-joy-color-scheme='light'] &": {
                     bgcolor: videoFile ? "#bae6fd" : "#e2e8f0",
                     color: videoFile ? "#0284c7" : "#64748b",
@@ -456,7 +644,7 @@ export default function LessonModal({
                   textAlign: "center",
                 }}
               >
-                {videoFile ? videoFile.name : "Video faylni tanlang"}
+                {videoFile ? (videoFile.name.length > 30 ? videoFile.name.slice(0, 30) + "..." : videoFile.name) : "Video faylni tanlang"}
               </Typography>
               {videoFile && (
                 <Typography
@@ -527,24 +715,35 @@ export default function LessonModal({
                 fontWeight: 700,
                 borderRadius: "8px",
                 border: "none",
+                minWidth: 120,
                 "[data-joy-color-scheme='light'] &": {
-                  bgcolor: "#0284c7",
+                  bgcolor: uploadStage === "done" ? "#16a34a" : "#0284c7",
                   color: "#fff",
-                  "&:hover": { bgcolor: "#0369a1" },
-                  "&:disabled": { opacity: 0.7 },
+                  "&:hover:not(:disabled)": {
+                    bgcolor: uploadStage === "done" ? "#15803d" : "#0369a1",
+                  },
+                  "&:disabled": { opacity: 0.75 },
+                  transition: "background 0.3s ease",
                 },
                 "[data-joy-color-scheme='dark'] &": {
-                  bgcolor: "#9333ea",
+                  bgcolor: uploadStage === "done" ? "#16a34a" : "#9333ea",
                   color: "#fff",
-                  "&:hover": { bgcolor: "#7e22ce" },
-                  "&:disabled": { opacity: 0.7 },
+                  "&:hover:not(:disabled)": {
+                    bgcolor: uploadStage === "done" ? "#15803d" : "#7e22ce",
+                  },
+                  "&:disabled": { opacity: 0.75 },
+                  transition: "background 0.3s ease",
                 },
               }}
             >
               {loading
-                ? uploadProgress > 0
-                  ? `${uploadProgress}%`
-                  : "Tayyorlanmoqda..."
+                ? uploadStage === "uploading"
+                  ? `Yuklanmoqda ${uploadPercent}%`
+                  : uploadStage === "processing"
+                    ? "Vimeo..."
+                    : uploadStage === "done"
+                      ? "Tayyor ✓"
+                      : "Tayyorlanmoqda..."
                 : isEdit
                   ? "Yangilash"
                   : "Yaratish"}

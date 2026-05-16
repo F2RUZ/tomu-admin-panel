@@ -28,12 +28,15 @@ export default function PhoneInput({
   disabled,
 }: PhoneInputProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // ✅ digits e'lon qilingan
     const digits = e.target.value.replace(/\D/g, "");
+
     const withPrefix = digits.startsWith("998")
       ? digits
       : digits.length > 0
-        ? "998" + digits
+        ? "998" + digits.replace(/^9+/, "")
         : "";
+
     onChange(formatPhone(withPrefix));
   };
 
@@ -64,8 +67,6 @@ export default function PhoneInput({
           borderRadius: "12px",
           height: 52,
           letterSpacing: "0.02em",
-
-          // ── Light ──
           "[data-joy-color-scheme='light'] &": {
             bgcolor: "#f8fafc",
             color: "#0f172a",
@@ -79,8 +80,6 @@ export default function PhoneInput({
               bgcolor: "#fff",
             },
           },
-
-          // ── Dark ──
           "[data-joy-color-scheme='dark'] &": {
             bgcolor: "#26262d",
             color: "#fafafa",

@@ -1,25 +1,20 @@
+// src/components/auth/LoginLayout/LoginLayoutInner.tsx
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect } from "react";
 import { Box, Typography } from "@mui/joy";
 import { gsap } from "@/lib/gsap";
 import LoginCard from "@/components/auth/LoginCard";
 
-export default function LoginLayout() {
+export default function LoginLayoutInner() {
   const leftRef = useRef<HTMLDivElement>(null);
   const orb1Ref = useRef<HTMLDivElement>(null);
   const orb2Ref = useRef<HTMLDivElement>(null);
   const stat1Ref = useRef<HTMLDivElement>(null);
   const stat2Ref = useRef<HTMLDivElement>(null);
   const stat3Ref = useRef<HTMLDivElement>(null);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
     gsap.fromTo(
       leftRef.current,
       { x: -30, opacity: 0 },
@@ -52,10 +47,8 @@ export default function LoginLayout() {
         delay: 0.5,
       },
     );
-  }, [mounted]);
+  }, []);
 
-  // ✅ Server va client bir xil HTML render qiladi — hydration yo'q
-  // Faqat animatsiyalar mounted dan keyin boshlanadi
   return (
     <Box
       sx={{

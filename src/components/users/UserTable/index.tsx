@@ -1,7 +1,7 @@
 // src/components/users/UserTable/index.tsx
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Box,
@@ -23,6 +23,8 @@ import {
   RiSearchLine,
   RiDeleteBinLine,
   RiEyeLine,
+  RiEyeOffLine,
+  RiEditLine,
   RiMenLine,
   RiWomenLine,
   RiSaveLine,
@@ -31,6 +33,7 @@ import {
   RiLockLine,
   RiPhoneLine,
 } from "react-icons/ri";
+import UserModal from "@/components/users/UserModal";
 import { User, ROLE_CONFIG } from "@/types/user.types";
 import UserService from "@/services/userService";
 import { useSnackbarStore } from "@/store/snackbarStore";
@@ -59,6 +62,19 @@ function TeacherModal({
   const [password, setPassword] = useState("");
   const [courseId, setCourseId] = useState<string>("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Lenis lock
+  useEffect(() => {
+    if (open) {
+      document.documentElement.classList.add("lenis-stopped");
+    } else {
+      document.documentElement.classList.remove("lenis-stopped");
+    }
+    return () => {
+      document.documentElement.classList.remove("lenis-stopped");
+    };
+  }, [open]);
 
   // Kurslar ro'yxati
   const { data: coursesData } = useQuery({
@@ -79,6 +95,7 @@ function TeacherModal({
     setPassword("");
     setCourseId("");
     setErrors({});
+    setShowPassword(false);
   };
 
   const validate = () => {
@@ -86,6 +103,8 @@ function TeacherModal({
     if (!firstName.trim()) errs.firstName = "Ism kiritilishi shart";
     if (!lastName.trim()) errs.lastName = "Familiya kiritilishi shart";
     if (!phoneNumber.trim()) errs.phoneNumber = "Telefon kiritilishi shart";
+    else if (!phoneNumber.startsWith('+998')) errs.phoneNumber = "Telefon +998 bilan boshlanishi kerak";
+    else if (phoneNumber.length > 13) errs.phoneNumber = "Telefon raqam +998XXXXXXXXX formatida bo'lishi kerak";
     if (!courseId) errs.courseId = "Kurs tanlanishi shart";
     if (!password.trim()) errs.password = "Parol kiritilishi shart";
     else if (password.length < 6) errs.password = "Kamida 6 ta belgi";
@@ -170,7 +189,9 @@ function TeacherModal({
         sx={{
           width: { xs: "95vw", sm: 480 },
           maxHeight: "92vh",
-          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
           borderRadius: "8px",
           border: "1px solid",
           p: 0,
@@ -238,10 +259,10 @@ function TeacherModal({
         <Box
           component="form"
           onSubmit={handleSubmit}
-          sx={{ p: 3, display: "flex", flexDirection: "column", gap: 2 }}
+          data-lenis-prevent
+          sx={{ p: 3, flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}
         >
-          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
-            <FormControl error={!!errors.firstName}>
+          <FormControl error={!!errors.firstName}>
               <FormLabel sx={labelSx}>Ism</FormLabel>
               <Input
                 value={firstName}
@@ -253,8 +274,8 @@ function TeacherModal({
               {errors.firstName && (
                 <FormHelperText sx={errorSx}>{errors.firstName}</FormHelperText>
               )}
-            </FormControl>
-            <FormControl error={!!errors.lastName}>
+          </FormControl>
+          <FormControl error={!!errors.lastName}>
               <FormLabel sx={labelSx}>Familiya</FormLabel>
               <Input
                 value={lastName}
@@ -266,8 +287,7 @@ function TeacherModal({
               {errors.lastName && (
                 <FormHelperText sx={errorSx}>{errors.lastName}</FormHelperText>
               )}
-            </FormControl>
-          </Box>
+          </FormControl>
 
           <FormControl error={!!errors.phoneNumber}>
             <FormLabel sx={labelSx}>Telefon raqam</FormLabel>
@@ -447,12 +467,24 @@ function TeacherModal({
           <FormControl error={!!errors.password}>
             <FormLabel sx={labelSx}>Parol</FormLabel>
             <Input
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Kamida 6 ta belgi"
+              placeholder=""
               disabled={loading}
               startDecorator={<RiLockLine size={16} />}
+              endDecorator={
+                <Box
+                  onClick={() => setShowPassword(v => !v)}
+                  sx={{
+                    cursor: "pointer", display: "flex", alignItems: "center",
+                    "[data-joy-color-scheme='light'] &": { color: "#64748b", "&:hover": { color: "#0f172a" } },
+                    "[data-joy-color-scheme='dark'] &": { color: "#71717d", "&:hover": { color: "#fafafa" } },
+                  }}
+                >
+                  {showPassword ? <RiEyeOffLine size={16} /> : <RiEyeLine size={16} />}
+                </Box>
+              }
               sx={inputSx}
             />
             {errors.password && (
@@ -593,6 +625,7 @@ export default function UserTable() {
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [viewTarget, setViewTarget] = useState<User | null>(null);
   const [teacherModalOpen, setTeacherModalOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<User | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["users", page, perPage, search, role],
@@ -612,13 +645,15 @@ export default function UserTable() {
     onError: () => useSnackbarStore.getState().error("O'chirishda xatolik"),
   });
 
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleSearch = useCallback((val: string) => {
     setSearchInput(val);
-    const timer = setTimeout(() => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
       setSearch(val);
       setPage(1);
     }, 500);
-    return () => clearTimeout(timer);
   }, []);
 
   const formatDate = (d: string) =>
@@ -656,7 +691,7 @@ export default function UserTable() {
         <Input
           value={searchInput}
           onChange={(e) => handleSearch(e.target.value)}
-          placeholder="Ism yoki telefon..."
+          placeholder="Telefon raqam orqali qidiring..."
           startDecorator={<RiSearchLine size={16} />}
           sx={{
             flex: 1,
@@ -1049,6 +1084,19 @@ export default function UserTable() {
                       </td>
                       <td style={tdStyle}>
                         <Box sx={{ display: "flex", gap: 0.5 }}>
+                          <Tooltip title="Tahrirlash" placement="top" arrow>
+                            <IconButton
+                              size="sm" variant="soft"
+                              onClick={() => setEditTarget(user)}
+                              sx={{
+                                borderRadius: "8px",
+                                "[data-joy-color-scheme='light'] &": { bgcolor: "#f1f5f9", color: "#475569", "&:hover": { bgcolor: "#e2e8f0" } },
+                                "[data-joy-color-scheme='dark'] &": { bgcolor: "#26262d", color: "#a1a1aa", "&:hover": { bgcolor: "#3a3a44" } },
+                              }}
+                            >
+                              <RiEditLine size={14} />
+                            </IconButton>
+                          </Tooltip>
                           <Tooltip title="Ko'rish" placement="top" arrow>
                             <IconButton
                               size="sm"
@@ -1124,6 +1172,15 @@ export default function UserTable() {
         open={teacherModalOpen}
         onClose={() => setTeacherModalOpen(false)}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["users"] })}
+      />
+      <UserModal
+        open={!!editTarget}
+        onClose={() => setEditTarget(null)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["users"] });
+          setEditTarget(null);
+        }}
+        user={editTarget}
       />
       <UserDetailModal
         open={!!viewTarget}

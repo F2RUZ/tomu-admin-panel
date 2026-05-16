@@ -1,6 +1,4 @@
-// src/services/lessonService.ts
-import api from "./api";
-import axios from "axios";
+import api, { uploadApi } from "./api";
 import {
   LessonApiResponse,
   LessonListApiResponse,
@@ -8,30 +6,7 @@ import {
   UpdateLessonDto,
 } from "@/types/lesson.types";
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://tomubackend.tomu.uz/api";
-
-// Video upload uchun alohida instance — 10 daqiqa timeout
-const uploadApi = axios.create({
-  baseURL: BASE_URL,
-  timeout: 600000,
-  withCredentials: true,
-});
-
-uploadApi.interceptors.request.use((config) => {
-  try {
-    const stored = localStorage.getItem("tomu-admin-auth");
-    if (stored) {
-      const { state } = JSON.parse(stored);
-      const token = state?.tokens?.accessToken;
-      if (token) config.headers.Authorization = `Bearer ${token}`;
-    }
-  } catch {}
-  return config;
-});
-
 const LessonService = {
-  // GET /lesson/by-block/:blockId
   getByBlock: async (blockId: number): Promise<LessonListApiResponse> => {
     const res = await api.get<LessonListApiResponse>(
       `/lesson/by-block/${blockId}`,
@@ -39,13 +14,11 @@ const LessonService = {
     return res.data;
   },
 
-  // GET /lesson/:id
   getById: async (id: number): Promise<LessonApiResponse> => {
     const res = await api.get<LessonApiResponse>(`/lesson/${id}`);
     return res.data;
   },
 
-  // POST /lesson — video upload
   create: async (
     dto: CreateLessonDto,
     onProgress?: (percent: number) => void,
@@ -61,15 +34,15 @@ const LessonService = {
       headers: { "Content-Type": "multipart/form-data" },
       onUploadProgress: (e) => {
         if (onProgress && e.total) {
-          onProgress(Math.min(Math.round((e.loaded * 100) / e.total), 99));
+          onProgress(Math.min(Math.round((e.loaded / e.total) * 85), 85));
         }
       },
     });
-    onProgress?.(100);
+
+    onProgress?.(99);
     return res.data;
   },
 
-  // PATCH /lesson/:id
   update: async (
     id: number,
     dto: UpdateLessonDto,
@@ -84,23 +57,27 @@ const LessonService = {
       formData.append("grammarLink", dto.grammarLink);
     if (dto.video) formData.append("video", dto.video);
 
-    const res = await uploadApi.patch<LessonApiResponse>(
+    const instance = dto.video ? uploadApi : api;
+
+    const res = await instance.patch<LessonApiResponse>(
       `/lesson/${id}`,
       formData,
       {
         headers: { "Content-Type": "multipart/form-data" },
-        onUploadProgress: (e) => {
-          if (onProgress && e.total) {
-            onProgress(Math.min(Math.round((e.loaded * 100) / e.total), 99));
-          }
-        },
+        ...(dto.video && {
+          onUploadProgress: (e: any) => {
+            if (onProgress && e.total) {
+              onProgress(Math.min(Math.round((e.loaded / e.total) * 85), 85));
+            }
+          },
+        }),
       },
     );
-    onProgress?.(100);
+
+    onProgress?.(99);
     return res.data;
   },
 
-  // DELETE /lesson/:id
   delete: async (id: number): Promise<LessonApiResponse> => {
     const res = await api.delete<LessonApiResponse>(`/lesson/${id}`);
     return res.data;

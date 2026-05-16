@@ -1,14 +1,9 @@
-// src/app/(dashboard)/courses/[id]/grammar/page.tsx
 "use client";
-
-import { use } from "react";
+import { useParams } from "next/navigation";
 import GrammarTable from "@/components/courses/sections/Grammar/GrammarTable";
 
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
-
-export default function GrammarPage({ params }: PageProps) {
-  const { id } = use(params);
+export default function GrammarPage() {
+  const params = useParams();
+  const id = params.id as string;
   return <GrammarTable courseId={Number(id)} />;
 }

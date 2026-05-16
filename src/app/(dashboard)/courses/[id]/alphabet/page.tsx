@@ -1,13 +1,9 @@
-// src/app/(dashboard)/courses/[id]/alphabet/page.tsx
 "use client";
-import { use } from "react";
+import { useParams } from "next/navigation";
 import AlphabetTable from "@/components/courses/sections/Alphabet/AlphabetTable";
 
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
-
-export default function AlphabetPage({ params }: PageProps) {
-  const { id } = use(params);
+export default function AlphabetPage() {
+  const params = useParams();
+  const id = params.id as string;
   return <AlphabetTable courseId={Number(id)} />;
 }

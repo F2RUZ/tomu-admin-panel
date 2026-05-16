@@ -27,7 +27,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="uz" suppressHydrationWarning data-joy-color-scheme="dark">
+    // ✅ data-joy-color-scheme olib tashlandi — CssVarsProvider o'zi qo'yadi
+    <html lang="uz" suppressHydrationWarning>
       <body className={montserrat.variable} suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>

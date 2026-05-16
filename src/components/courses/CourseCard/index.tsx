@@ -16,6 +16,7 @@ import { gsap } from "@/lib/gsap";
 import StatusBadge from "@/components/ui/StatusBadge";
 import Link from "next/link";
 import { formatNumber } from "@/utils/format";
+import { getImageUrl } from "@/utils/url";
 
 interface CourseCardProps {
   course: Course;
@@ -23,8 +24,6 @@ interface CourseCardProps {
   onEdit: (course: Course) => void;
   onDelete: (course: Course) => void;
 }
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ?? "";
 
 export default function CourseCard({
   course,
@@ -47,15 +46,6 @@ export default function CourseCard({
       },
     );
   }, [index]);
-
-  // Rasmni to'g'ri URL — backenddan kelgan path ni to'liq URL ga aylantirish
-  const getImageUrl = (imageUrl: string | null | undefined): string | null => {
-    if (!imageUrl) return null;
-    if (imageUrl.startsWith("http")) return imageUrl;
-    // Slash bilan boshlanmasa qo'shamiz
-    const path = imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`;
-    return `${BASE_URL}${path}`;
-  };
 
   const imageUrl = getImageUrl(course.imageUrl);
 
@@ -128,8 +118,6 @@ export default function CourseCard({
             <RiBookOpenLine size={48} />
           </Box>
         )}
-
-        {/* Status badge */}
         <Box sx={{ position: "absolute", top: 10, left: 10 }}>
           <StatusBadge status={course.isActive ? "active" : "inactive"} />
         </Box>
@@ -151,7 +139,6 @@ export default function CourseCard({
         >
           {course.title}
         </Typography>
-
         <Typography
           sx={{
             fontFamily: "var(--font-montserrat)",
