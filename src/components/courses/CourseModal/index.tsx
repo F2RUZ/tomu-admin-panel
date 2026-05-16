@@ -2,10 +2,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
-  Modal,
-  ModalDialog,
-  ModalClose,
   Box,
   Typography,
   Input,
@@ -34,6 +32,7 @@ import CourseService from "@/services/courseService";
 import { useSnackbarStore } from "@/store/snackbarStore";
 import { gsap } from "@/lib/gsap";
 import { getImageUrl } from "@/utils/url";
+import { stopLenis, startLenis } from "@/lib/lenis";
 
 interface CourseModalProps {
   open: boolean;
@@ -65,6 +64,17 @@ export default function CourseModal({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const isEdit = !!editData;
+
+  useEffect(() => {
+    if (open) {
+      document.documentElement.classList.add("lenis-stopped");
+    } else {
+      document.documentElement.classList.remove("lenis-stopped");
+    }
+    return () => {
+      document.documentElement.classList.remove("lenis-stopped");
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -184,14 +194,41 @@ export default function CourseModal({
     color: "text.primary",
   };
 
-  return (
-    <Modal open={open} onClose={onClose}>
-      <ModalDialog
+  if (!open) return null;
+
+  return createPortal(
+    <Box
+      data-lenis-prevent-parent
+      sx={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1300,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        p: 2,
+      }}
+    >
+      {/* Backdrop */}
+      <Box
+        onClick={onClose}
+        sx={{
+          position: "absolute",
+          inset: 0,
+          bgcolor: "rgba(0,0,0,0.5)",
+          backdropFilter: "blur(4px)",
+        }}
+      />
+      <Box
         ref={dialogRef}
         sx={{
+          position: "relative",
+          zIndex: 1,
           width: { xs: "95vw", sm: 560 },
           maxHeight: "92vh",
-          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
           borderRadius: "20px",
           border: "1px solid",
           p: 0,
@@ -252,14 +289,26 @@ export default function CourseModal({
               {isEdit ? "Kursni tahrirlash" : "Yangi kurs"}
             </Typography>
           </Box>
-          <ModalClose sx={{ position: "static", borderRadius: "10px" }} />
+          <Box
+            onClick={onClose}
+            sx={{
+              width: 32, height: 32, borderRadius: "8px", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "all 0.15s ease",
+              "[data-joy-color-scheme='light'] &": { color: "#64748b", "&:hover": { bgcolor: "#f1f5f9" } },
+              "[data-joy-color-scheme='dark'] &": { color: "#71717d", "&:hover": { bgcolor: "#26262d" } },
+            }}
+          >
+            <RiCloseLine size={20} />
+          </Box>
         </Box>
 
         {/* Form */}
         <Box
           component="form"
           onSubmit={handleSubmit}
-          sx={{ p: 3, display: "flex", flexDirection: "column", gap: 2.5 }}
+          data-lenis-prevent
+          sx={{ p: 3, display: "flex", flexDirection: "column", gap: 2.5, flex: 1, overflowY: "auto", minHeight: 0 }}
         >
           {/* Image upload */}
           <FormControl error={!!errors.image}>
@@ -582,7 +631,8 @@ export default function CourseModal({
             </Button>
           </Box>
         </Box>
-      </ModalDialog>
-    </Modal>
+      </Box>
+    </Box>,
+    document.body
   );
 }

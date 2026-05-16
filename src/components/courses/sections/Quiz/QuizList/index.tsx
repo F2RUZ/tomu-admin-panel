@@ -10,6 +10,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import QuizBlockAccordion from "@/components/courses/sections/Quiz/QuizBlockAccordion";
 import QuizModal from "@/components/courses/sections/Quiz/QuizModal";
 import { Quiz } from "@/types/quiz.types";
+import { useAuthStore } from "@/store/authStore";
 
 interface Props {
   courseId: number;
@@ -30,10 +31,27 @@ export default function QuizList({ courseId }: Props) {
         : [],
   });
 
+  const { user } = useAuthStore();
+  const isTeacher = user?.role?.toLowerCase() === "teacher";
+
   const { data: allQuizzes, isLoading: quizzesLoading } = useQuery({
-    queryKey: ["quizzes", courseId],
-    queryFn: () => QuizService.getAll(),
-    select: (res) => (Array.isArray(res.data) ? res.data : []),
+    queryKey: ["quizzes", courseId, isTeacher],
+    queryFn: () => isTeacher ? QuizService.getGrouped() : QuizService.getAll(),
+    select: (res: any) => {
+      if (isTeacher) {
+        const grouped = Array.isArray(res.data) ? res.data : [];
+        const quizzes: any[] = [];
+        grouped.forEach((course: any) => {
+          course.blocks?.forEach((block: any) => {
+            block.lessons?.forEach((lesson: any) => {
+              if (lesson.quiz) quizzes.push({ ...lesson.quiz, lessonId: lesson.id });
+            });
+          });
+        });
+        return quizzes;
+      }
+      return Array.isArray(res.data) ? res.data : [];
+    },
   });
 
   const isLoading = blocksLoading || quizzesLoading;

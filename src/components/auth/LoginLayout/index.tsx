@@ -58,6 +58,7 @@ export default function LoginLayout() {
   // Faqat animatsiyalar mounted dan keyin boshlanadi
   return (
     <Box
+      suppressHydrationWarning
       sx={{
         minHeight: "100vh",
         display: "flex",
@@ -67,6 +68,7 @@ export default function LoginLayout() {
     >
       {/* ─── Left panel ─────────────────────────── */}
       <Box
+      suppressHydrationWarning
         ref={leftRef}
         sx={{
           display: { xs: "none", lg: "flex" },
@@ -88,6 +90,7 @@ export default function LoginLayout() {
         }}
       >
         <Box
+      suppressHydrationWarning
           ref={orb1Ref}
           sx={{
             position: "absolute",
@@ -102,6 +105,7 @@ export default function LoginLayout() {
           }}
         />
         <Box
+      suppressHydrationWarning
           ref={orb2Ref}
           sx={{
             position: "absolute",
@@ -116,6 +120,7 @@ export default function LoginLayout() {
           }}
         />
         <Box
+      suppressHydrationWarning
           sx={{
             position: "absolute",
             inset: 0,
@@ -128,6 +133,7 @@ export default function LoginLayout() {
 
         <Box sx={{ position: "relative", zIndex: 1, maxWidth: 460 }}>
           <Box
+      suppressHydrationWarning
             sx={{
               display: "inline-flex",
               alignItems: "center",
@@ -141,6 +147,7 @@ export default function LoginLayout() {
             }}
           >
             <Box
+      suppressHydrationWarning
               sx={{
                 width: 32,
                 height: 32,
@@ -209,6 +216,7 @@ export default function LoginLayout() {
               { ref: stat3Ref, value: "99%", label: "Ishonchlilik" },
             ].map((stat) => (
               <Box
+      suppressHydrationWarning
                 key={stat.label}
                 ref={stat.ref}
                 sx={{
@@ -252,6 +260,7 @@ export default function LoginLayout() {
 
       {/* ─── Right panel ──────────────────────────────────── */}
       <Box
+      suppressHydrationWarning
         sx={{
           width: { xs: "100%", lg: 520 },
           display: "flex",
@@ -265,6 +274,7 @@ export default function LoginLayout() {
         }}
       >
         <Box
+      suppressHydrationWarning
           sx={{
             position: "absolute",
             top: "20%",
@@ -284,6 +294,7 @@ export default function LoginLayout() {
           }}
         />
         <Box
+      suppressHydrationWarning
           sx={{ width: "100%", maxWidth: 440, position: "relative", zIndex: 1 }}
         >
           <LoginCard />

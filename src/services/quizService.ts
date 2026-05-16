@@ -32,6 +32,11 @@ const QuizService = {
     return res.data;
   },
 
+  // GET /quiz/grouped — teacher uchun
+  getGrouped: async (): Promise<any> => {
+    const res = await api.get("/quiz/grouped");
+    return res.data;
+  },
   // DELETE /quiz/:id — testni o'chirish
   delete: async (id: number): Promise<QuizApiResponse> => {
     const res = await api.delete<QuizApiResponse>(`/quiz/${id}`);

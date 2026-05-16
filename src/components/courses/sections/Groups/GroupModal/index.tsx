@@ -65,11 +65,11 @@ export default function GroupModal({
     if (!open) return;
     if (editData) {
       setName(editData.name ?? "");
-      setGender(editData.gender ?? "MALE");
+      setGender(editData.gender?.toLowerCase() ?? "male");
       setMaxStudents(String(editData.maxStudents ?? 12));
     } else {
       setName("");
-      setGender("MALE");
+      setGender("male");
       setMaxStudents("12");
     }
     setErrors({});
@@ -266,12 +266,12 @@ export default function GroupModal({
             >
               {[
                 {
-                  value: "MALE",
+                  value: "male",
                   label: "Erkaklar",
                   icon: <RiMenLine size={18} />,
                 },
                 {
-                  value: "FEMALE",
+                  value: "female",
                   label: "Ayollar",
                   icon: <RiWomenLine size={18} />,
                 },

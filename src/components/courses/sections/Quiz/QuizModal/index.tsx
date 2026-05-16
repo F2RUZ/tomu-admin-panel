@@ -45,12 +45,12 @@ interface QuestionForm {
 
 const emptyQuestion = (order: number): QuestionForm => ({
   questionText: "",
-  options: ["", "", "", ""],
+  options: ["", "", ""],
   correctOptionIndex: 0,
   order,
 });
 
-const OPTION_LABELS = ["A", "B", "C", "D"];
+const OPTION_LABELS = ["A", "B", "C"];
 
 export default function QuizModal({
   open,

@@ -290,7 +290,7 @@ export default function GroupTable({ courseId }: GroupTableProps) {
                   const progress = Math.round(
                     (group.studentsCount / group.maxStudents) * 100,
                   );
-                  const isMale = group.gender === "MALE";
+                  const isMale = ["MALE", "male"].includes(group.gender);
 
                   return (
                     <tr

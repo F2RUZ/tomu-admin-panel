@@ -84,8 +84,9 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         position: "sticky",
         top: 0,
         height: "100vh",
-        overflowY: "auto",
         zIndex: 100,
+        overflowY: "auto",
+        overflowX: "hidden",
         "[data-joy-color-scheme='light'] &": { bgcolor: "#ffffff" },
         "[data-joy-color-scheme='dark'] &": { bgcolor: "#18181b" },
       }}
@@ -275,66 +276,6 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           flexShrink: 0,
         }}
       >
-        {/* Theme toggle */}
-        <Tooltip
-          title={mode === "dark" ? "Kunduzgi rejim" : "Tungi rejim"}
-          placement={collapsed ? "right" : "top"}
-          arrow
-        >
-          <Box
-            onClick={toggleTheme}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              px: collapsed ? 0 : 1.5,
-              py: 1,
-              borderRadius: "12px",
-              cursor: "pointer",
-              justifyContent: collapsed ? "center" : "flex-start",
-              transition: "all 0.2s ease",
-              "&:hover": {
-                "[data-joy-color-scheme='light'] &": { bgcolor: "#f1f5f9" },
-                "[data-joy-color-scheme='dark'] &": {
-                  bgcolor: "rgba(255,255,255,0.05)",
-                },
-              },
-            }}
-          >
-            <Box
-              sx={{
-                width: 36,
-                height: 36,
-                borderRadius: "10px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                "[data-joy-color-scheme='light'] &": { color: "#64748b" },
-                "[data-joy-color-scheme='dark'] &": { color: "#71717d" },
-              }}
-            >
-              {mode === "dark" ? (
-                <RiSunLine size={18} />
-              ) : (
-                <RiMoonLine size={18} />
-              )}
-            </Box>
-            {!collapsed && (
-              <Typography
-                sx={{
-                  fontFamily: "var(--font-montserrat)",
-                  fontWeight: 500,
-                  fontSize: "0.8125rem",
-                  "[data-joy-color-scheme='light'] &": { color: "#475569" },
-                  "[data-joy-color-scheme='dark'] &": { color: "#a1a1aa" },
-                }}
-              >
-                {mode === "dark" ? "Kunduzgi rejim" : "Tungi rejim"}
-              </Typography>
-            )}
-          </Box>
-        </Tooltip>
-
         {/* User + logout */}
         {user && (
           <Box
@@ -382,7 +323,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                       fontSize: "0.8125rem",
                       color: "text.primary",
                       whiteSpace: "nowrap",
-                      overflow: "hidden",
+                      overflowY: "auto",
+                      overflowX: "hidden",
                       textOverflow: "ellipsis",
                     }}
                   >

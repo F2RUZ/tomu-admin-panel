@@ -249,8 +249,10 @@ body:has([data-quiz-modal="open"]) {
 
 /* Lenis scroll lock modal uchun */
 html.lenis-stopped {
+  overflow: hidden !important;
 }
 html.lenis-stopped body {
+  overflow: hidden !important;
 }
 /* Modal ichida scroll ishlashi uchun */
 [data-lenis-prevent] {

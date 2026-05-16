@@ -18,6 +18,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSidebarStore } from "@/store/sidebarStore";
+import { useAuthStore } from "@/store/authStore";
 
 interface CourseDetailSidebarProps {
   courseId: string;
@@ -30,40 +31,48 @@ const getNavItems = (courseId: string) => [
     path: `/courses/${courseId}`,
     icon: <RiInformationLine size={18} />,
     exact: true,
+    roles: ["admin", "director", "teacher"],
   },
   {
     label: "Alifbo",
     path: `/courses/${courseId}/alphabet`,
     icon: <RiText size={18} />,
+    roles: ["admin", "director"],
   },
   {
     label: "Darslar",
     path: `/courses/${courseId}/lessons`,
     icon: <RiVideoLine size={18} />,
+    roles: ["admin", "director"],
   },
   {
     label: "Grammar",
     path: `/courses/${courseId}/grammar`,
     icon: <RiFileTextLine size={18} />,
+    roles: ["admin", "director", "teacher"],
   },
   {
     label: "Uy vazifalari",
+    roles: ["admin", "director"],
     path: `/courses/${courseId}/homework`,
     icon: <RiHomeLine size={18} />,
   },
   {
     label: "Tariflar",
+    roles: ["admin", "director"],
     path: `/courses/${courseId}/tariffs`,
     icon: <RiPriceTagLine size={18} />,
   },
   {
     label: "Quiz",
+    roles: ["admin", "director"],
     path: `/courses/${courseId}/quiz`,
     icon: <RiQuestionLine size={18} />,
   },
   // {
   {
     label: "Guruhlar",
+    roles: ["admin", "director"],
     path: `/courses/${courseId}/groups`,
     icon: <RiGroupLine size={18} />,
   },
@@ -76,7 +85,9 @@ export default function CourseDetailSidebar({
 }: CourseDetailSidebarProps) {
   const pathname = usePathname();
   const { nestedCollapsed, toggleNested } = useSidebarStore();
-  const navItems = getNavItems(courseId);
+  const { user } = useAuthStore();
+  const userRole = user?.role?.toLowerCase() ?? "admin";
+  const navItems = getNavItems(courseId).filter(item => !item.roles || item.roles.includes(userRole));
 
   return (
     <Box
